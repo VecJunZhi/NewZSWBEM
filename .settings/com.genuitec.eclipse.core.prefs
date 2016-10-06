@@ -1,0 +1,3 @@
+eclipse.preferences.version=1
+validator.Checked=resource/spring.xml,WebRoot/WEB-INF/jsp/mbem/mcrm/house/room/searchRoom.jsp,WebRoot/mcrm/business/follow.jsp,WebRoot/mcrm/business/addCustom.jsp,WebRoot/wbem/two/Desk_Xsjl.html,resource,WebRoot/WEB-INF/jsp/wbem/pub/menu.jsp
+validator.Unchecked=
