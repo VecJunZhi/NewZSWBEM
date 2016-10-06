@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zs.rbac.dao.UserOrganizationMapper" >
+  <resultMap id="BaseResultMap" type="com.zs.rbac.entity.UserOrganization" >
+    <id column="UUGID" property="uugid" jdbcType="INTEGER" />
+    <result column="UserID" property="userid" jdbcType="INTEGER" />
+    <result column="GroupID" property="groupid" jdbcType="INTEGER" />
+  </resultMap>
+  <sql id="Base_Column_List" >
+    UUGID, UserID, GroupID
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Integer" >
+    select 
+    <include refid="Base_Column_List" />
+    from zs_rbac_user_usergroup
+    where UUGID = #{uugid,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from zs_rbac_user_usergroup
+    where UUGID = #{uugid,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.zs.rbac.entity.UserOrganization" >
+    insert into zs_rbac_user_usergroup (UUGID, UserID, GroupID
+      )
+    values (#{uugid,jdbcType=INTEGER}, #{userid,jdbcType=INTEGER}, #{groupid,jdbcType=INTEGER}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.zs.rbac.entity.UserOrganization" >
+    insert into zs_rbac_user_usergroup
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="uugid != null" >
+        UUGID,
+      </if>
+      <if test="userid != null" >
+        UserID,
+      </if>
+      <if test="groupid != null" >
+        GroupID,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="uugid != null" >
+        #{uugid,jdbcType=INTEGER},
+      </if>
+      <if test="userid != null" >
+        #{userid,jdbcType=INTEGER},
+      </if>
+      <if test="groupid != null" >
+        #{groupid,jdbcType=INTEGER},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.zs.rbac.entity.UserOrganization" >
+    update zs_rbac_user_usergroup
+    <set >
+      <if test="userid != null" >
+        UserID = #{userid,jdbcType=INTEGER},
+      </if>
+      <if test="groupid != null" >
+        GroupID = #{groupid,jdbcType=INTEGER},
+      </if>
+    </set>
+    where UUGID = #{uugid,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.zs.rbac.entity.UserOrganization" >
+    update zs_rbac_user_usergroup
+    set UserID = #{userid,jdbcType=INTEGER},
+      GroupID = #{groupid,jdbcType=INTEGER}
+    where UUGID = #{uugid,jdbcType=INTEGER}
+  </update>
+</mapper>

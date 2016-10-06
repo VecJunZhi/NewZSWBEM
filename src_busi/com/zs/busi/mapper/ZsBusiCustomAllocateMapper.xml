@@ -1,0 +1,558 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper  namespace="com.zs.busi.dao.ZsBusiCustomAllocateDao">
+	<!-- 获得逾期客户/无效客户/跟进中客户 -->
+	<select id="getZsCustCountDao" parameterType="com.zs.busi.web.vo.ZsBusiCustomAllocateVo"  resultType="Integer">
+	 		declare @overdueDays int;
+	 		declare @publicCode int;
+	 		declare @duplinCode int;
+			select @overdueDays=名称 from dbo.zs_词典 where 类别='招商逾期天数';
+			select @publicCode=名称 from dbo.zs_词典 where 类别='公共客户编码';
+			select @duplinCode=名称 from dbo.zs_词典 where 类别='垃圾箱编码';
+				 		
+	 		select count(*) from dbo.zs_客户  a,dbo.zs_rbac_user b,dbo.zs_客户意向条件 c
+	 		<where>
+	 			a.客户id=c.客户id and b.UserId=c.接待人id and c.项目id=#{projGUID} 
+	 			 
+	 			<if test="desc=='逾期客户'">
+		 			and a.是否有效=1 and DATEDIFF(day,dateadd(day,@overdueDays,a.最近跟进日期),getdate()) >0  
+	 			</if>
+	 			<if test="desc=='无效客户'">
+	 				and a.是否有效=0
+	 			</if>
+	 			<if test="desc=='跟进中客户'">
+	 				and a.是否有效 =1  
+		 			<!-- and DATEDIFF(day,dateadd(day,@overdueDays,a.最近跟进日期),getdate()) &lt;= 0	 -->
+			 	</if>
+			 	<if test="cstName !=null and ''!=cstName">
+		 			and a.客户名称 like '%${cstName}%'
+				</if>
+				<if test="mobileTel != null and ''!=mobileTel">
+	       			and a.联系电话  like '%${mobileTel}%'
+	       		</if>	
+	       		<if test=" userName!= null and ''!=userName">
+	       			and b.UserName  like '%${userName}%'
+	       		</if>
+	       		<if test="userGuid != null and ''!= userGuid">
+	       			and b.UserId =#{userGuid}
+	       		</if>
+	       		<if test="gfyx!= null and ''!=gfyx">
+	       			 and charindex(a.意向类别,#{gfyx},1)>0
+	       		</if>
+	       		<if test="cstStatus!=null and ''!=cstStatus">
+	       			and charindex(a.客户状态,#{cstStatus},1)>0
+	       		</if>
+	       		<if test="startTime!=null and ''!=startTime">
+	       			and a.最近跟进日期  &gt;= #{startTime}
+	       		</if>
+	       		<if test="endTime!=null and ''!=endTime">
+	       			and a.最近跟进日期 &lt;= #{endTime}
+	       		</if>
+	       		<if test="startDays!=null and ''!=startDays">
+	       			and DATEDIFF(DAY,dateadd(DAY, @overdueDays, a.最近跟进日期),getdate()) &gt;= ${startDays}
+	       		</if>
+	       		<if test="endDays!=null and ''!=endDays">
+	       			and DATEDIFF(DAY,dateadd(DAY, @overdueDays, a.最近跟进日期),getdate()) &lt;= ${endDays} 
+	       		</if>
+	       		<if test="startCreate!=null and ''!=startCreate">
+	       			and a.创建日期 &gt;= #{startCreate}
+	       		</if>
+	       		<if test="endCreate!=null and ''!=endCreate">
+	       			and a.创建日期 &lt;= #{endCreate}
+	       		</if>
+	 		</where>
+	 </select>
+	 <!-- 获得/公共客户/垃圾箱客户 的总共数目 -->
+	 <select id="getZsCustPubDupCountDao" parameterType="com.zs.busi.web.vo.ZsBusiCustomAllocateVo"  resultType="Integer">
+	 		
+	 		
+	 		<!-- select count(*)   
+			from dbo.zs_客户 a 
+			LEFT JOIN (SELECT cusId,operDate,oldOperator 
+			FROM zs_customerlog a 
+			where EXISTS(SELECT 1 FROM zs_customerlog WHERE cusId=a.cusId and operator =a .operator and operDate<a.operDate) 
+			AND a.belongSys='zs') b ON b.cusId=a.客户id 
+			
+			LEFT JOIN zs_客户意向条件 d  ON d.客户id=a.客户id 
+			where d.接待人id ='-10'  -->
+	 		declare @publicCode int;
+	 		declare @duplinCode int;
+			select @publicCode=名称 from dbo.zs_词典 where 类别='公共客户编码';
+			select @duplinCode=名称 from dbo.zs_词典 where 类别='垃圾箱编码';
+			
+	 		SELECT a.cusId,MAX(a.operDate)AS operDate INTO #TEMPS FROM [dbo].[zs_customerlog] a WHERE a.belongSys='zs' GROUP BY a.cusId  ORDER BY operDate DESC;
+			SELECT DISTINCT a.*,c.oldOperator as operator INTO #TEMPSS FROM #TEMPS a LEFT JOIN [dbo].[zs_customerlog] c ON a.cusId=c.cusId WHERE a.operDate =c.operDate ORDER BY operDate DESC;	
+			select count(*)  from dbo.zs_客户 a, #TEMPSS b ,dbo.zs_客户意向条件 d 
+	 		<where>
+	 			a.客户id=b.cusId and a.客户id=d.客户id 
+	 			<if test="desc=='公共客户'">
+	 				and d.接待人id =@publicCode 
+		 			<if test="cstName !=null and ''!= cstName">
+		 				and a.客户名称 like '%${cstName}%'
+					</if>
+					<if test="mobileTel != null and ''!= mobileTel">
+		       			and a.联系电话  like '%${mobileTel}%'
+		       		</if>
+		       		<if test=" projGUID != null and ''!= projGUID">
+	       				and d.项目id  =#{projGUID}
+	       			</if>
+		       		<if test=" userName2 != null and ''!= userName2">
+	       				and b.operator  like '%${userName2}%'
+	       			</if>
+		       		<if test=" gfyx !=null and ''!= gfyx">
+		       			 and charindex(a.意向类别,#{gfyx},1)>0
+		       		</if>
+		       		<if test=" cstStatus != null and ''!= cstStatus " >
+	       				 and  a.客户状态  =#{cstStatus}
+	       			</if>
+	       			<if test="startTime!=null and ''!=startTime">
+	       				and a.最近跟进日期 &gt;= #{startTime}
+	       			</if>
+	       			<if test="endTime!=null and ''!=endTime">
+	       				and a.最近跟进日期 &lt;= #{endTime}
+	       			</if>
+	 			</if>
+	 			<if test="desc=='垃圾箱客户'">
+	 				and d.接待人id =@duplinCode
+	 				<if test="cstName !=null and ''!= cstName">
+		 				and a.客户名称 like '%${cstName}%'
+					</if>
+					<if test="mobileTel != null and ''!= mobileTel">
+		       			and a.联系电话  like '%${mobileTel}%'
+		       		</if>
+		       		<if test=" projGUID != null and ''!= projGUID">
+	       				and d.项目id  =#{projGUID}
+	       			</if>
+		       		<if test=" userName2 != null and ''!= userName2">
+	       				and b.operator  like '%${userName2}%'
+	       			</if>
+		       		<if test=" gfyx !=null and ''!= gfyx">
+		       			 and charindex(a.意向类别,#{gfyx},1)>0
+		       		</if>
+		       		<if test=" cstStatus != null and ''!= cstStatus " >
+	       			 	and  a.客户状态  =#{cstStatus}
+	       			</if>
+	       			<if test="startTime!=null and ''!=startTime">
+	       				and a.最近跟进日期 &gt;= #{startTime}
+	       			</if>
+	       			<if test="endTime!=null and ''!=endTime">
+	       				and a.最近跟进日期 &lt;= #{endTime}
+	       			</if>
+	 			</if>
+	 		</where>
+	 		drop table #TEMPS;
+			drop table ##TEMPSS;
+	 </select>
+	<!-- 获得逾期客户 -->
+	<select id="getZsOverdueCustInfoDao" parameterType="com.zs.busi.web.vo.ZsBusiCustomAllocateVo" resultType="com.zs.busi.entity.ZsBusiCustomAllocateEntity">
+	 		declare @overdueDays int;
+			select @overdueDays=名称 from dbo.zs_词典 where 类别='招商逾期天数';
+	 		select a.客户id as cusId,a.客户名称 as cusName,a.联系电话 as tel,a.创建日期 as createDate,a.创建日期 as firstDate,a.客户状态 as customStatus,a.意向类别 as intentionType,a.最近跟进日期 as lastFollowDate,a.最近跟进日期 as lastDate,
+			a.跟进方式 as followWay,a.下次跟进时间 as nextFollowDate,c.UserName as employeeName,c.UserName as userName,DATEDIFF(DAY,dateadd(DAY, @overdueDays, a.最近跟进日期),getdate()) as overDays into #overTemp from dbo.zs_客户 a,dbo.zs_客户意向条件 b,dbo.zs_rbac_user c where a.客户id=b.客户id and b.接待人id=c.UserID
+	 		and DATEDIFF(DAY,dateadd(DAY, @overdueDays, a.最近跟进日期),getdate()) > 0  and a.是否有效=1  and b.项目id=#{projGUID} 
+	 			<if test="cstName !=null and ''!=cstName">
+	 				and a.客户名称 like '%${cstName}%'
+				</if>
+				<if test="mobileTel != null and ''!=mobileTel">
+	       			and a.联系电话  like '%${mobileTel}%'
+	       		</if>
+	       		<if test=" userName != null and ''!= userName">
+	       			and c.UserName  like '%${userName}%'
+	       		</if>
+				<if test="userGuid != null and ''!= userGuid">
+	       			and c.UserId =#{userGuid}
+	       		</if> 
+	       		<if test=" gfyx != null and ''!= gfyx">
+	       			 and charindex(a.意向类别,#{gfyx},1)>0
+	       		</if>
+	       		<if test="cstStatus!=null and ''!=cstStatus">
+	       			and charindex(a.客户状态,#{cstStatus},1)>0
+	       		</if>
+	       		<if test="startTime!=null and ''!=startTime">
+	       			and a.最近跟进日期 &gt;= #{startTime}
+	       		</if>
+	       		<if test="endTime!=null and ''!=endTime">
+	       			and a.最近跟进日期 &lt;= #{endTime}
+	       		</if>
+	       		<if test="startDays!=null and ''!=startDays">
+	       			and DATEDIFF(DAY,dateadd(DAY, @overdueDays, a.最近跟进日期),getdate()) &gt;= ${startDays}
+	       		</if>
+	       		<if test="endDays!=null and ''!=endDays">
+	       			and DATEDIFF(DAY,dateadd(DAY, @overdueDays, a.最近跟进日期),getdate()) &lt;= ${endDays} 
+	       		</if>
+	       		<if test=" cstGuid != null and ''!= cstGuid">
+	       			 and  a.客户id  =#{cstGuid}
+	       		</if>
+				<if test="sortDir!=null and ''!=sortDir and sortName!=null and ''!=sortName">
+		       		order by ${sortName} ${sortDir}
+		       	</if>
+	 			<if test=" cstGuid != null and ''!= cstGuid">
+	       			select  *  from #overTemp 
+	       		</if>
+	       		<if test=" cstGuid == null and flg_all==null">
+	       			select top ${length} *  from #overTemp where cusId not in (select top ${startIndex} cusId from #overTemp)
+			
+	       		</if>
+	       		<if test=" cstGuid == null and flg_all != null and '' !=flg_all ">
+       				select * from #overTemp 
+       			</if>
+	 		
+			drop table #overTemp	
+	</select>
+
+	<!-- 获得无效客户 -->
+	<select id="getZsCusInvalidDao" parameterType="com.zs.busi.web.vo.ZsBusiCustomAllocateVo" resultType="com.zs.busi.entity.ZsBusiCustomAllocateEntity">
+			declare @overdueDays int;
+			select @overdueDays=名称 from dbo.zs_词典 where 类别='招商逾期天数';
+	 		select a.客户id as cusId,a.客户名称 as cusName,a.联系电话 as tel,a.创建日期 as createDate,a.创建日期 as firstDate,a.客户状态 as customStatus,a.意向类别 as intentionType,a.最近跟进日期 as lastFollowDate,a.最近跟进日期 as lastDate,
+			a.跟进方式 as followWay,a.下次跟进时间 as nextFollowDate,c.UserName as employeeName,c.UserName as userName,DATEDIFF(DAY,dateadd(DAY, @overdueDays, a.最近跟进日期),getdate()) as overDays into #invalidTemp from dbo.zs_客户 a,dbo.zs_客户意向条件 b,dbo.zs_rbac_user c where a.客户id=b.客户id and b.接待人id=c.UserID
+	 		and a.是否有效=0 and b.项目id=#{projGUID} 
+	 		<if test="cstName !=null and ''!=cstName">
+	 				and a.客户名称 like '%${cstName}%'
+			</if>
+			<if test="mobileTel != null and ''!=mobileTel">
+       			and a.联系电话  like '%${mobileTel}%'
+       		</if>
+			<if test=" cstGuid != null and ''!= cstGuid">
+       			 and  a.客户id  =#{cstGuid}
+       		</if>
+			<if test="sortDir!=null and ''!=sortDir and sortName!=null and ''!=sortName">
+	       		order by ${sortName} ${sortDir}
+	       	</if>
+	 		<if test=" cstGuid != null and ''!= cstGuid">
+       			select * from #invalidTemp
+       		</if>
+       		<if test=" cstGuid == null and flg_all==null">
+       			select top ${length} *  from #invalidTemp where cusId not in (select top ${startIndex} cusId from #invalidTemp)
+			
+       		</if>
+       		<if test=" cstGuid == null and flg_all != null and '' !=flg_all ">
+       			select * from #invalidTemp
+       		</if>
+	 		
+			drop table #invalidTemp	
+	</select>
+	<!-- 获得跟进中客户 -->
+ 	<select id="getZsCustFollowingDao" parameterType="com.zs.busi.web.vo.ZsBusiCustomAllocateVo" resultType="com.zs.busi.entity.ZsBusiCustomAllocateEntity">
+ 			declare @overdueDays int;
+			select @overdueDays=名称 from dbo.zs_词典 where 类别='招商逾期天数';
+	 		select a.客户id as cusId,a.客户名称 as cusName,a.联系电话 as tel,a.创建日期 as createDate,a.创建日期 as firstDate,a.客户状态 as customStatus,a.意向类别 as intentionType,a.最近跟进日期 as lastFollowDate,a.最近跟进日期 as lastDate,
+			a.跟进方式 as followWay,a.下次跟进时间 as nextFollowDate,c.UserName as employeeName,c.UserName as userName into #followTemp from dbo.zs_客户 a,dbo.zs_客户意向条件 b,dbo.zs_rbac_user c where a.客户id=b.客户id and b.接待人id=c.UserID
+	 		<!-- and DATEDIFF(DAY,dateadd(DAY, @overdueDays, a.最近跟进日期),getdate()) &lt;= 0 --><!-- 跟进中包括逾期客户 -->  
+	 		and a.是否有效=1  and b.项目id=#{projGUID} 
+	       		<if test="cstName !=null and ''!=cstName">
+	 				and a.客户名称  like '%${cstName}%'
+				</if>
+				<if test="mobileTel != null and ''!=mobileTel">
+	       			and a.联系电话  like '%${mobileTel}%'
+	       		</if>
+	       		<if test=" userName != null and ''!= userName">
+	       			and c.UserName  like '%${userName}%'
+	       		</if>
+				<if test="userGuid != null and ''!= userGuid">
+	       			and c.userId =#{userGuid}
+	       		</if>
+	       		<if test=" gfyx != null and ''!= gfyx">
+	       			 and charindex(a.意向类别,#{gfyx},1)>0
+	       		</if>
+	       		<if test="cstStatus!=null and ''!=cstStatus">
+	       			and charindex(a.客户状态,#{cstStatus},1)>0
+	       		</if>
+	       		<if test="startCreate!=null and ''!=startCreate">
+	       			and a.创建日期 &gt;= #{startCreate}
+	       		</if>
+	       		<if test="endCreate!=null and ''!=endCreate">
+	       			and a.创建日期 &lt;= #{endCreate}
+	       		</if>
+	       		<if test=" cstGuid != null and ''!= cstGuid">
+	       			 and  a.客户id  =#{cstGuid}
+	       		</if>
+	       		<if test="sortDir!=null and ''!=sortDir and sortName!=null and ''!=sortName">
+	       			 order by ${sortName} ${sortDir}
+	       		</if>
+	 		<!-- order by a.最近跟进日期 desc,a.客户id -->
+	 			<if test=" cstGuid != null and ''!= cstGuid">
+	       			 select *  from #followTemp
+	       		</if>
+	       		<if test=" cstGuid == null or ''== cstGuid">
+		       		<if test="length !=null and length !=0">
+		       			 select top ${length} *  from #followTemp where cusId not in (select top ${startIndex} cusId from #followTemp)
+					</if>
+					<if test="length==0">
+						select *  from #followTemp
+					</if>
+	       		</if>
+	 		
+			drop table #followTemp		
+	</select>
+	<!-- 获得跟进中客户 不分页-->
+ 	<select id="getZsCustFollowingDao_withoutPage" parameterType="com.zs.busi.web.vo.ZsBusiCustomAllocateVo" resultType="com.zs.busi.entity.ZsBusiCustomAllocateEntity">
+ 			declare @overdueDays int;
+			select @overdueDays=名称 from dbo.zs_词典 where 类别='招商逾期天数';
+	 		select a.客户id as cusId,a.客户名称 as cusName,a.联系电话 as tel,a.创建日期 as createDate,a.客户状态 as customStatus,a.意向类别 as intentionType,a.最近跟进日期 as lastFollowDate,
+			a.跟进方式 as followWay,a.下次跟进时间 as nextFollowDate,c.UserName as employeeName into #followTemp from dbo.zs_客户 a,dbo.zs_客户意向条件 b,dbo.zs_rbac_user c where a.客户id=b.客户id and b.接待人id=c.UserID
+	 		and DATEDIFF(DAY,dateadd(DAY, @overdueDays, a.最近跟进日期),getdate()) &lt;= 0  and a.是否有效=1  and b.项目id=#{projGUID} 
+	       		<if test="cstName !=null and ''!=cstName">
+	 				and a.客户名称  like '%${cstName}%'
+				</if>
+				<if test="mobileTel != null and ''!=mobileTel">
+	       			and a.联系电话  like '%${mobileTel}%'
+	       		</if>
+	       		<if test=" userName != null and ''!= userName">
+	       			and c.UserName  like '%${userName}%'
+	       		</if>
+				<if test="userGuid != null and ''!= userGuid">
+	       			and c.userId =#{userGuid}
+	       		</if>
+	       		<if test=" gfyx != null and ''!= gfyx">
+	       			 and charindex(a.意向类别,#{gfyx},1)>0
+	       		</if>
+	       		<if test="cstStatus!=null and ''!=cstStatus">
+	       			and charindex(a.客户状态,#{cstStatus},1)>0
+	       		</if>
+	       		<if test="startCreate!=null and ''!=startCreate">
+	       			and a.创建日期 &gt;= #{startCreate}
+	       		</if>
+	       		<if test="endCreate!=null and ''!=endCreate">
+	       			and a.创建日期 &lt;= #{endCreate}
+	       		</if>
+	       		<if test=" cstGuid != null and ''!= cstGuid">
+	       			 and  a.客户id  =#{cstGuid}
+	       		</if>
+	 		order by a.最近跟进日期 desc,a.客户id
+	 		select *  from #followTemp
+			drop table #followTemp		
+	</select>
+	<!-- 获得公共客户 -->
+	<select id="getZsCustPublicDao"  parameterType="com.zs.busi.web.vo.ZsBusiCustomAllocateVo" resultType="com.zs.busi.web.vo.ZsBusiCustomAllocateVo">
+			declare @publicCode int;
+			select @publicCode=名称 from dbo.zs_词典 where 类别='公共客户编码';
+	 		SELECT a.cusId,MAX(a.operDate)AS operDate INTO #TEMPS FROM [dbo].[zs_customerlog] a WHERE a.belongSys='zs' GROUP BY a.cusId  ORDER BY operDate DESC;
+			SELECT DISTINCT a.*,c.oldOperator as operator INTO #TEMPSS FROM #TEMPS a LEFT JOIN [dbo].[zs_customerlog] c ON a.cusId=c.cusId WHERE a.operDate =c.operDate ORDER BY operDate DESC;	
+			select DISTINCT a.客户id,a.客户名称,a.联系电话,a.客户状态,a.创建日期, a.最近跟进日期,a.跟进方式,a.意向类别,b.operator as userName  into #temp14  from dbo.zs_客户 a, #TEMPSS b ,dbo.zs_客户意向条件 d 
+			<where>
+				 a.客户id=d.客户id and a.客户id=b.cusId and d.接待人id=@publicCode 
+				<if test="cstName !=null and ''!= cstName">
+	 				and a.客户名称 like '%${cstName}%'
+				</if>
+				<if test="mobileTel != null and ''!= mobileTel">
+	       			and a.联系电话  like '%${mobileTel}%'
+	       		</if>
+	       		<if test=" projGUID != null and ''!= projGUID">
+	       			and d.项目id  =#{projGUID}
+	       		</if> 
+	       		<if test=" userName2 != null and ''!= userName2">
+	       			and b.operator  like '%${userName2}%'
+	       		</if>
+	       		<if test=" gfyx != null and ''!= gfyx">
+	       			 and charindex(a.意向类别,#{gfyx},1)>0
+	       		</if>
+	       		<if test=" cstGuid != null and ''!= cstGuid " >
+	       			 and  a.客户id  =#{cstGuid}
+	       		</if>
+	       		<if test=" cstStatus != null and ''!= cstStatus " >
+	       			 and charindex(a.客户状态,#{cstStatus},1)>0
+	       		</if>
+	       		<if test="startTime!=null and ''!=startTime">
+	       			and a.最近跟进日期 &gt;= #{startTime}
+	       		</if>
+	       		<if test="endTime!=null and ''!=endTime">
+	       			and a.最近跟进日期 &lt;= #{endTime}
+	       		</if>
+	       		
+			</where>
+			select 客户id as cstGuid,客户名称 as cstName,联系电话 as mobileTel,创建日期 as firstDate,最近跟进日期 as lastDate , 跟进方式   as  gjfs,意向类别 as gfyx,userName,客户状态 as status from #temp14
+			<where>
+				1 = 1
+				<if test="length !=null and length !=0">
+					<if test='sortName == "跟进日期" or sortName == "最近跟进日期"'>
+						and 客户id in (select top ${length} 客户id from #temp14 where 最近跟进日期 not in(select top ${startIndex}  最近跟进日期 from #temp14 order by 最近跟进日期  ${sortDir},客户id)order by 最近跟进日期  ${sortDir},客户id) order by 最近跟进日期  ${sortDir},客户id
+					</if>
+					<if test='sortName == "客户名称" or sortName == "联系电话"  or sortName == "意向类别"'>
+						and ${sortName} in (select top ${length} ${sortName} from #temp14  where ${sortName} not in(select top ${startIndex} ${sortName} from #temp14 order by ${sortName} ${sortDir}) order by ${sortName} ${sortDir}) order by ${sortName} ${sortDir}
+					</if>
+				</if>
+				<if test="length==0">
+					<!-- 查询所有 -->
+				</if>
+			</where>
+			drop table #TEMPS;
+			drop table ##TEMPSS;
+			drop table #temp14;
+	</select>
+	
+	 <!-- 获得垃圾箱客户 -->
+	<select id="getZsCustDusBinDao"  parameterType="com.zs.busi.web.vo.ZsBusiCustomAllocateVo" resultType="com.zs.busi.web.vo.ZsBusiCustomAllocateVo">
+			<!-- drop table if  exists like #temp; -->
+	 		declare @publicCode int;
+			select @publicCode=名称 from dbo.zs_词典 where 类别='垃圾箱编码';
+	 		SELECT a.cusId,MAX(a.operDate)AS operDate INTO #TEMPS FROM [dbo].[zs_customerlog] a WHERE a.belongSys='zs' GROUP BY a.cusId  ORDER BY operDate DESC;
+			SELECT a.*,c.oldOperator as operator INTO #TEMPSS FROM #TEMPS a LEFT JOIN [dbo].[zs_customerlog] c ON a.cusId=c.cusId WHERE a.operDate =c.operDate ORDER BY operDate DESC;	
+			select a.客户id,a.客户名称,a.联系电话,a.客户状态,a.创建日期, a.最近跟进日期,a.跟进方式,a.意向类别,b.operator as userName  into #temp14  from dbo.zs_客户 a, #TEMPSS b ,dbo.zs_客户意向条件 d 
+			<where>
+				  a.客户id=d.客户id and a.客户id=b.cusId and d.接待人id=@publicCode 
+				<if test="cstName !=null and ''!= cstName">
+	 				and a.客户名称 like '%${cstName}%'
+				</if>
+				<if test="mobileTel != null and ''!= mobileTel">
+	       			and a.联系电话  like '%${mobileTel}%'
+	       		</if>
+	       		<if test=" projGUID != null and ''!= projGUID">
+	       			and d.项目id  =#{projGUID}
+	       		</if>
+	       		<if test=" userName2 != null and ''!= userName2">
+	       				and b.operator  like '%${userName2}%'
+	       			</if>
+	       		<if test=" gfyx != null and ''!= gfyx">
+	       			 and charindex(a.意向类别,#{gfyx},1)>0
+	       		</if>
+	       		<if test=" cstGuid != null and ''!= cstGuid">
+	       			 and  a.客户id  =#{cstGuid}
+	       		</if>
+	       		<if test=" cstStatus != null and ''!= cstStatus " >
+	       			and charindex(a.客户状态,#{cstStatus},1)>0
+	       		</if>
+	       		<if test="startTime!=null and ''!=startTime">
+	       			and a.最近跟进日期 &gt;= #{startTime}
+	       		</if>
+	       		<if test="endTime!=null and ''!=endTime">
+	       			and a.最近跟进日期 &lt;= #{endTime}
+	       		</if>
+			</where>
+			select 客户id as cstGuid,客户名称 as cstName,联系电话 as mobileTel,创建日期 as firstDate,最近跟进日期 as lastDate , 跟进方式   as  gjfs,意向类别 as gfyx,userName,客户状态 as status from #temp14
+			<where>
+				<if test="length !=0">
+					<if test='sortName == "跟进日期" or sortName == "最近跟进日期"'>
+						<!-- and a.客户id=d.客户id and d.接待人id=c.员工id  -->
+						<!-- and b.客户id in (select top ${length} 客户id from #temp14 where 跟进日期 not in(select top ${startIndex}  跟进日期 from #temp14 order by 跟进日期  ${sortDir})order by 跟进日期  ${sortDir}) order by b.跟进日期  ${sortDir}; -->
+						and 客户id in (select top ${length} 客户id from #temp14 where 最近跟进日期 not in(select top ${startIndex}  最近跟进日期 from #temp14 order by 最近跟进日期  ${sortDir},客户id)order by 最近跟进日期  ${sortDir},客户id) order by 最近跟进日期  ${sortDir},客户id
+					</if>
+					<if test='sortName == "客户名称" or sortName == "联系电话"  or sortName == "意向类别"'>
+						and ${sortName} in (select top ${length} ${sortName} from #temp14  where ${sortName} not in(select top ${startIndex} ${sortName} from #temp14 order by ${sortName} ${sortDir}) order by ${sortName} ${sortDir}) order by ${sortName} ${sortDir}
+					</if>
+				</if>
+				<if test="length==0">
+					and 1=1
+				</if>
+			</where>
+			drop table #TEMPS;
+			drop table ##TEMPSS;
+			drop table #temp14;
+	</select>
+	<!-- 根据客户id获得客户的基本信息 -->
+	<select id="getCustomInfoByCusId" parameterType="com.zs.busi.entity.ZsInfoVo" resultType="com.zs.busi.entity.ZsCustomTableVo">
+      		select a.id,a.客户id as cusId,a.客户名称 as cusName,a.客户编号 as cusNo,a.公司标志 as compSymbol,a.法人代表 as legalPerson,a.地址市 as addr,
+       			a.地址区 as addrArea,a.地址路 as addrRoad,a.联系人 as person,a.联系电话 as tel,a.传真号码 as faxNo,a.邮政编码 as zipCode,
+       			a.开户银行 as accountBank,a.银行帐号 as accountNo,a.性别 as sex,a.出生年月 as birthday,a.Email as email,a.主页地址 as homePage,
+       			a.户口所在地 as residenceAddr,a.证件名称 as idName, a.身份证号码 as idNo, a.工作单位 as workComp, a.附加说明   as appendInfo,
+       			a.身份  as identitys, a.国籍  as nationality, a.类别 as classes, a.级别id as levelId, a.客户描述 as cusDesp, a.年龄 as age, a.客户简称 as cusAbb,
+       			a.手机号码 as phoneNo, a.月收入 as monthIncome, a.年收入 as yearIncome, a.初次到访方式 as firstVisWay, a.总帐编码 as accountCode,
+       			a.总帐科目名称 as accountName, a.已收会费 as vipFee, a.收款单编号 as billNo, a.卡号 as cardNo, a.跟进方式 as followWay,
+       			a.下次跟进时间 as nextFollowDate, a.意向类别 as intentionType, a.购房用途 as houseUse, a.关注因素 as factor, a.工作行业 as workType,
+       			a.来访次数 as visitTimes, a.家庭结构 as familyInfo, a.招商业态 as investmentInfo,a.标签  as label,  a.意向面积  as intentionArea, a.置业次数  as buyTimes,  a.竞争对手  as competitor,
+				a.意向价格  as intentionPrice,  a.意向产品  as intentionProduct, a.意向房型   as intentionRoom ,a.最近跟进日期 as lastDate,a.创建日期  as firstDate from dbo.zs_客户  a
+			<where>
+	       		<if test="id != null">
+	       			a.id=#{id}
+	       		</if>
+	       		<if test="cusId != null">
+	       			and a.客户id=#{cusId}
+	       		</if>
+	       		<if test="cusName !=null">
+	       			and a.客户名称=#{cusName}
+	       		</if>
+	       		<if test="tel != null">
+	       			and a.联系电话  =#{tel}
+	       		</if>
+	       </where>
+	 		ORDER BY a.客户id  DESC
+	</select>
+
+	<!-- 获得公司置业顾问的列表 -->
+	<select id="getZsEmployeeList" parameterType="com.zs.busi.entity.ZsInfoVo" resultType="com.zs.rbac.entity.User">
+ 			<!-- select id,员工id as employeeId,员工编号 as employeeNo,员工姓名 as employeeName,部门id as deptId,性别 as sex,职务 as duty,住址 as homeAddress,
+ 			联系电话 as tel,BP机  as bpNo,学历 as education,毕业院校 as school,专业 as major,籍贯 as nativePlace,出生日期 as birthday,入职日期 as entryDate,
+ 			离职日期 as leaveDate,备注 as note,岗位 as position,Email as email from dbo.员工 
+ 			<where>
+		 		<if test="employeeName !=null and ''!=employeeName">
+		 			员工姓名  like '%${employeeName}%'
+		 		</if>
+		 		<if test="deptName !=null and ''!=deptName">
+		 			and 部门id=(select 部门id from dbo.部门    where 部门名称=#{deptName})
+		 		</if>
+		 		<if test="duty !=null and ''!=duty">
+		 			and 职务=#{duty}
+		 		</if>
+		 		<if test="tel !=null and ''!=tel">
+		 			and 联系电话 like '%${tel}%'
+		 		</if>
+		 		<if test="employeeId !=null and ''!=employeeId">
+		 			and 员工id=#{employeeId}
+		 		</if>
+		 		<if test="cusId !=null and ''!=cusId">
+		 			and 员工id=(select 接待人id from dbo.zs_客户意向条件 where 客户id=#{cusId})
+		 		</if>
+		 	</where> -->
+		 	select UserID as userID,UserName as username,RealName as realname,Password as password,Mobile as mobile,EMail as email,
+		 	LoginType as logintype,Ustatus as ustatus,CreateTime as createtime,LastTime as lasttime,Description as description
+		 	from dbo.zs_rbac_user where 1=1
+		 	<if test="employeeName!=null and ''!=employeeName">
+		 		and UserName like '%${employeeName}%'
+		 	</if>
+		 	<if test="tel!=null and ''!=tel">
+		 		and Mobile like '%${tel}%'
+		 	</if>
+		 	<if test="employeeId!=null and ''!=employeeId">
+		 		and UserID = #{employeeId}
+		 	</if>
+		 	<if test="cusId!=null and ''!=cusId">
+		 		and UserId = (select 接待人id from dbo.zs_客户意向条件 where 客户id=#{cusId})
+		 	</if>
+	 		
+ 	</select>
+ 	<!-- (分配) -->
+ 	<update id="allocateCustomers"  parameterType="com.zs.busi.entity.ZsInfoVo" >
+ 			declare  @var varchar(20),@count int;
+ 			declare @getdate varchar(50);
+ 			set @getdate=getdate();
+ 			update dbo.zs_客户意向条件 set 接待人id=#{employeeId} where 客户id=#{cusId}
+ 			update dbo.zs_客户  set 是否有效=1, 最近跟进日期=@getdate ,是否新分配 ='1'  where 客户id=#{cusId} <!-- 只要是分配客户，都是有效的 -->
+ 			insert into dbo.zs_客户跟进记录 (客户id,跟进人id,跟进日期,跟进内容) values (#{cusId},#{employeeId},@getdate,'新分配客户');
+ 	</update>
+ 	<!-- (回收) -->
+ 	<update id="reBackCustomers"  parameterType="com.zs.busi.entity.ZsInfoVo">
+ 			declare @publicCode int;
+	 		select @publicCode=名称 from dbo.zs_词典 where 类别='公共客户编码';
+ 			update dbo.zs_客户意向条件 set 接待人id=@publicCode  where 客户id=#{cusId}
+ 	</update>
+ 	<!-- 垃圾处理 -->
+ 	<update id="dusbinCustomers"  parameterType="com.zs.busi.entity.ZsInfoVo">
+ 			declare @duplinCode int;
+			select @duplinCode=名称 from dbo.zs_词典 where 类别='垃圾箱编码';
+ 			update dbo.zs_客户意向条件 set 接待人id=@duplinCode  where 客户id=#{cusId}
+ 	</update>
+
+	<select id="autoRebackOverCustomer"  parameterType="com.zs.busi.entity.ZsInfoVo" resultType="com.zs.busi.entity.ZsBusiCustomAllocateEntity">
+			declare @overdueDays int,@overdueRebackDays int;
+			select @overdueDays=名称 from dbo.zs_词典 where 类别='招商逾期天数';
+			select @overdueRebackDays=名称 from dbo.zs_词典 where 类别='招商逾期回收天数';
+			select a.客户id as cusId,a.客户名称 as cusName,a.联系电话 as tel,a.跟进方式 as followDate,a.意向类别 as intentionType,a.最近跟进日期 as followDate,b.UserName as employName
+			from dbo.zs_客户 a,dbo.zs_rbac_user b,dbo.zs_客户意向条件 c where a.客户id=c.客户id and c.接待人id=b.UserId
+			and DATEDIFF(DAY,dateadd(DAY, @overdueDays, a.最近跟进日期),getdate()) >= @overdueRebackDays   and a.是否有效=1 
+			and c.项目id = #{projGUID} 
+	</select>
+	<select id="autoRebackInvalidCustomer" parameterType="com.zs.busi.entity.ZsInfoVo" resultType="com.zs.busi.entity.ZsBusiCustomAllocateEntity">
+			declare @invalidRebackDays int;
+			select @invalidRebackDays=名称 from dbo.zs_词典 where 类别='招商无效回收天数';
+	 		declare @overdueDays int;
+			select @overdueDays=名称 from dbo.zs_词典 where 类别='招商逾期天数';
+	 		select a.客户id as cusId,a.客户名称 as cusName,a.联系电话 as tel,a.创建日期 as createDate,a.创建日期 as firstDate,a.客户状态 as customStatus,a.意向类别 as intentionType,a.最近跟进日期 as lastFollowDate,a.最近跟进日期 as lastDate,
+			a.跟进方式 as followWay,a.下次跟进时间 as nextFollowDate,c.UserName as employeeName,c.UserName as userName,DATEDIFF(DAY,dateadd(DAY, @overdueDays, a.最近跟进日期),getdate()) as overDays into #invalidTemp from dbo.zs_客户 a,dbo.zs_客户意向条件 b,dbo.zs_rbac_user c where a.客户id=b.客户id and b.接待人id=c.UserID
+	 		and a.是否有效=0 and b.项目id=#{projGUID} and DATEDIFF(DAY,dateadd(DAY, @invalidRebackDays, a.无效日期),getdate()) >= 0
+	 		select * from #invalidTemp
+	 		drop table #invalidTemp	
+	</select> 
+	<select id="getUserGuidBycstId" parameterType="com.zs.busi.entity.ZsInfoVo" resultType="com.zs.busi.entity.ZsBusiCustomAllocateEntity">
+		select 接待人id as userGuid from dbo.zs_客户意向条件 where 客户id=#{cusId} 
+	</select>
+ </mapper>

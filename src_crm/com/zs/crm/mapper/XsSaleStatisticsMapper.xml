@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="com.zs.crm.dao.XsSaleStatisticsDao">
+ <select id="getRoomStatisticsInfoDao" parameterType="java.util.Map" resultType="com.zs.crm.entity.XsSaleStatisticsResultVo">
+ 	select SUM(case when a.Status in('签约','认购','销控','待售') then 1 else 0 end) AS totalNum,SUM(case when a.Status in('签约','认购') then 1 else 0 end) AS soldNum, 
+	SUM(case when a.Status in ('销控','待售') then 1 else 0 end) AS unSoldNum,sum(d.total) as totalAmount,sum(d.ye) as qkAmount,sum(case when d.ye!=0 then 1 else 0 end) as qkNum from p_Room a left join p_Building b on a.BldGUID=b.BldGUID
+	left join s_Trade c on c.RoomGUID=a.RoomGUID and c.TradeStatus='激活'
+	LEFT JOIN (select sum(rmbAmount) as total,sum(rmbye) as ye,TradeGUID from s_Fee group by TradeGUID) as d on c.TradeGUID=d.TradeGUID
+	where a.projguid=#{projGuid} 
+	<if test="roomType=='room'">
+		and b.AreaFullName='A区' and b.BldName like '%号楼'	
+	</if>
+	<if test="roomType=='carport'">
+		and b.AreaFullName='A区' and b.BldName like '%车位%'	
+	</if>
+ </select>
+ 
+ <sql id="unPaymentCommon">
+ 	select * into #overDue from ( 
+		SELECT     R.Roominfo, R.BldArea,T.CstAllName AS CstName,  cstname1.MobileTel, 
+		                      cstname1.HomeTel,cstname1.OfficeTel,cstname1.Fax, cstname1.Gender,
+		           			  cstname1.CstGUID, CONVERT(VARCHAR(20), O.QSDate, 23) AS QStime,  sf.YQdate as endDate,opp.UserGUID as uId,<!-- op.UserGUID as uId, 2016-7-4-->
+		                      O.RmbCjTotal AS RmbTotal, sf.QKTotal, O.RmbCjTotal-sf.QKTotal as SKTotal,O.OrderType AS SaleStatus, vm.UserName AS UserName, O.ProjGUID, O.QSDate, O.RoomGUID, O.TradeGUID, 
+		                      O.OrderGUID AS SaleGUID,gjjl.createDate,gjjl.nextDate,gjjl.content,ext.postponeDate,case when ext.level is null or ext.level=0 then '0' else '1' end as level,
+							  case when (case when ext.postponeDate is null then DATEDIFF(dd, sf.YQdate, GETDATE()) else DATEDIFF(dd, ext.postponeDate, GETDATE()) end ) &lt; 0 then 0 
+							  else (case when ext.postponeDate is null then DATEDIFF(dd, sf.YQdate, GETDATE()) else DATEDIFF(dd, ext.postponeDate, GETDATE()) end) end as overDays
+		FROM         dbo.s_Trade AS T   
+		 LEFT OUTER JOIN dbo.s_Order AS O ON O.TradeGUID = T.TradeGUID AND T.ProjGUID = O.ProjGUID 
+		 LEFT OUTER JOIN dbo.s_Trade2Cst AS cst1 ON T.TradeGUID = cst1.TradeGUID AND cst1.CstNum = 1 
+		 LEFT OUTER JOIN dbo.p_Customer AS cstname1 ON cst1.CstGUID = cstname1.CstGUID 
+		 LEFT OUTER JOIN dbo.s_Opportunity AS opp ON opp.CstGUID=cstname1.CstGUID AND not exists (SELECT 1 from s_Opportunity WHERE CstGUID=opp.CstGUID AND scrm_timestamp_data>opp.scrm_timestamp_data ) 
+         <!-- INNER JOIN dbo.s_Opportunity op ON op.CstGUID=cst1.CstGUID
+      	 INNER JOIN dbo.vs_user_tm vm ON vm.value=cast(op.UserGUID AS varchar(50)) and vm.groupName like '%销售%' 2016-7-4-->
+      	 INNER JOIN dbo.vs_user_ntm vm ON vm.value=cast(opp.UserGUID AS varchar(50)) and (vm.groupName like '%销售%' or vm.groupName='离职组' or vm.userName='其他')
+		 LEFT OUTER JOIN dbo.p_Room AS R ON O.RoomGUID = R.RoomGUID 
+		 INNER JOIN (SELECT     SUM(RmbYe) AS QKTotal, TradeGUID, ProjGUID, MIN(lastDate) AS YQdate 
+		                            FROM          dbo.s_Fee 
+		                            WHERE      (RmbYe > 0) AND (lastDate IS NOT NULL) <!-- AND (DATEDIFF(dd, lastDate, GETDATE()) >= 0) 2016-7-9--> AND (ItemType = '非贷款类房款') AND (ItemName = '首期' OR 
+		                                                   ItemName = '楼款') OR 
+		                                                   (RmbYe > 0) AND (lastDate IS NOT NULL) <!-- AND (DATEDIFF(dd, lastDate, GETDATE()) > 0) 2016-7-4--> AND (ItemType = '代收费用') 
+		                            GROUP BY TradeGUID, ProjGUID 
+		                            HAVING      (SUM(RmbYe) > 0)) AS sf ON sf.TradeGUID = O.TradeGUID AND sf.ProjGUID = O.ProjGUID 
+		LEFT JOIN (select * from zs_trade_gjjl a 
+     		where not exists (select * from zs_trade_gjjl where a.TradeGUID=TradeGUID and createDate>a.createDate)) as gjjl ON gjjl.tradeGUID=convert(VARCHAR(50),T.TradeGUID)
+		LEFT JOIN zs_trade_ext ext on ext.tradeGUID = T.TradeGUID
+		WHERE     (O.Status = '激活') AND (O.OrderType = '小订' OR 
+		                      O.OrderType = '认购') AND R.HuXing!='商铺')a 
+		where  ProjGUID=#{xsOpp.projGuid} 
+		<!-- and SaleGUID in (select distinct VisitBusinessGUID from s_OrderOppRight where 1=1 -->
+		<if test="xsOpp.userGuid!=null and ''!=xsOpp.userGuid">
+			and uId = #{xsOpp.userGuid}
+		</if>
+		<!-- )  -->
+		<if test="xsCst.cstName!=null and ''!=xsCst.cstName">
+			and CstName = #{xsCst.cstName}
+		</if>
+		<if test="xsCst.mobileTel!=null and ''!=xsCst.mobileTel">
+			and (MobileTel = #{xsCst.mobileTel} or OfficeTel = #{xsCst.mobileTel} or HomeTel = #{xsCst.mobileTel} or Fax = #{xsCst.mobileTel})
+		</if>
+		<if test="xsOther.minQsDate!=null and ''!=xsOther.minQsDate">
+			and QStime &gt;= #{xsOther.minQsDate}
+		</if>
+		<if test="xsOther.maxQsDate!=null and ''!=xsOther.maxQsDate">
+			and QStime &lt;= #{xsOther.maxQsDate}
+		</if>
+		<if test="xsOther.minOverDueDays!=null and ''!=xsOther.minOverDueDays">
+			and YQdate &gt;= #{xsOther.minOverDueDays}
+		</if>
+		<if test="xsOther.maxOverDueDays!=null and ''!=xsOther.maxOverDueDays">
+			and YQdate &lt;= #{xsOther.maxOverDueDays}
+		</if>
+		<if test="xsCst.cstGuid!=null and ''!=xsCst.cstGuid">
+			and CstGUID = #{xsCst.cstGuid}
+		</if>
+		<if test="xsOrder.roomGuid!=null and ''!=xsOrder.roomGuid">
+			and RoomGUID = #{xsOrder.roomGuid}
+		</if>
+		<if test="xsExt.level!=null and ''!=xsExt.level">
+			and level in (${xsExt.level})
+		</if>
+		<if test="xsTrade.tradeGuid!=null and ''!=xsTrade.tradeGuid">
+			and tradeGUID = #{xsTrade.tradeGuid}
+		</if>
+		<if test="xsOther.toUrged!=null and ''!=xsOther.toUrged">
+			and DATEDIFF(dd,nextDate,GETDATE()) = 0
+		</if>
+		<if test="xsSearch.sortName !=null and ''!=xsSearch.sortName">
+			order by ${xsSearch.sortName} ${xsSearch.sortDir},tradeGuid
+		</if>
+ </sql>
+ <select id="getUnPaymentInfoDao" parameterType="com.zs.crm.entity.XsBusinessUrgedInfoVo" resultType="com.zs.crm.entity.XsSaleStatisticsResultVo">
+ 	<include refid="unPaymentCommon"/>
+ 	select case when count(*) is null then 0 else count(*) end as unPaymentNum,case when sum(ye) is null then 0 else sum(ye) end as unPaymentAmount from (select TradeGUID,sum(RmbYe) as ye from s_Fee where TradeGUID in (select tradeGuid from #overDue) GROUP BY tradeguid) a
+	drop table #overDue
+ </select>
+ 
+ <sql id="unSignUpCommon">
+ 	SELECT     R.Roominfo,R.BldArea,T.CstAllName AS CstName, cstname1.Gender,cstname1.MobileTel,cstname1.HomeTel,cstname1.OfficeTel, cstname1.Fax, 
+		CONVERT(VARCHAR(20), O.QSDate, 23) AS QStime, case when DATEDIFF(dd, O.EndDate, GETDATE()) &lt; 0 then 0 else DATEDIFF(dd, O.EndDate, GETDATE()) end AS overDays,O.EndDate as endDate, case when ext.level1 is null or ext.level1=0 then '0' else '1' end as level1,
+		O.RmbCjTotal, O.OrderType AS SaleStatus, vm.UserName AS UserName, O.TradeGUID, O.ProjGUID,  O.OrderGUID, T.OppGUID,gjjl.createDate,gjjl.content,gjjl.nextDate into #unSignUp
+		FROM         dbo.s_Trade AS T 
+		LEFT JOIN dbo.s_Order AS O ON O.TradeGUID = T.TradeGUID AND T.ProjGUID = O.ProjGUID 
+		LEFT JOIN dbo.s_Trade2Cst AS cst1 ON T.TradeGUID = cst1.TradeGUID AND cst1.CstNum = 1 
+		LEFT JOIN dbo.p_Customer AS cstname1 ON cst1.CstGUID = cstname1.CstGUID 
+		LEFT OUTER JOIN dbo.s_Opportunity AS opp ON opp.CstGUID=cstname1.CstGUID AND not exists (SELECT 1 from s_Opportunity WHERE CstGUID=opp.CstGUID AND scrm_timestamp_data>opp.scrm_timestamp_data ) 
+        <!-- INNER JOIN dbo.s_Opportunity op ON op.CstGUID=cst1.CstGUID  
+        INNER JOIN dbo.vs_user_tm vm ON vm.value=cast(op.UserGUID AS varchar(50))  and vm.groupName like '%销售%'2016-7-4-->
+        INNER JOIN dbo.vs_user_ntm vm ON vm.value=cast(opp.UserGUID AS varchar(50))  and (vm.groupName like '%销售%' or vm.groupName='离职组' or vm.userName='其他')
+		LEFT JOIN dbo.p_Room AS R ON O.RoomGUID = R.RoomGUID 
+		LEFT JOIN (select TradeGUID,SUM(RmbYe)AS rmbye from s_Fee  where ItemType!='贷款类房款' group by TradeGUID) sf ON sf.TradeGUID=t.TradeGUID
+		LEFT JOIN (select * from zs_trade_gjjl a 
+     		where not exists (select * from zs_trade_gjjl where a.TradeGUID=TradeGUID and createDate>a.createDate)) as gjjl ON gjjl.tradeGUID=convert(VARCHAR(50),T.TradeGUID)
+		LEFT JOIN zs_trade_ext ext on ext.tradeGUID = T.TradeGUID
+		WHERE (O.EndDate IS NOT NULL) <!-- AND (DATEDIFF(dd, O.EndDate, GETDATE()) > 0) 2016-7-4--> AND (O.Status = '激活') AND (O.OrderType = '认购') 
+		<!-- AND R.HuXing!='商铺' AND R.HuXing != '车位' AND op.status != '丢失' and rmbye = 0
+		<if test="xsOpp.userGuid!=null and ''!=xsOpp.userGuid">
+			and op.UserGUID = #{xsOpp.userGuid}
+		</if> 2016-7-4-->
+		AND R.HuXing!='商铺' AND R.HuXing != '车位' AND opp.status != '丢失' and rmbye = 0
+		<if test="xsOpp.userGuid!=null and ''!=xsOpp.userGuid">
+			and opp.UserGUID = #{xsOpp.userGuid}
+		</if>
+		<if test="xsOpp.projGuid!=null and ''!=xsOpp.projGuid">
+			and O.ProjGUID = #{xsOpp.projGuid}
+		</if>
+		<if test="xsCst.cstName!=null and ''!=xsCst.cstName">
+			and T.CstAllName = #{xsCst.cstName}
+		</if>
+		<if test="xsCst.mobileTel!=null and ''!=xsCst.mobileTel">
+			and (cstname1.MobileTel = #{xsCst.mobileTel} or cstname1.OfficeTel = #{xsCst.mobileTel} or cstname1.HomeTel = #{xsCst.mobileTel} or cstname1.Fax = #{xsCst.mobileTel})
+		</if>
+		<if test="xsTrade.tradeGuid!=null and ''!=xsTrade.tradeGuid">
+			and O.TradeGUID = #{xsTrade.tradeGuid}
+		</if>
+		<if test="xsExt.level!=null and ''!=xsExt.level">
+			and ext.level1 in (${xsExt.level})
+		</if>
+		<if test="xsOther.toUrged!=null and ''!=xsOther.toUrged">
+			and DATEDIFF(dd,gjjl.nextDate,GETDATE()) = 0
+		</if>
+		<if test="xsSearch.sortName !=null and ''!=xsSearch.sortName">
+			order by ${xsSearch.sortName} ${xsSearch.sortDir},tradeGuid
+		</if>
+ </sql>
+ <select id="getUnSignUpInfoDao" parameterType="com.zs.crm.entity.XsBusinessUrgedInfoVo" resultType="com.zs.crm.entity.XsSaleStatisticsResultVo">
+ 	<include refid="unSignUpCommon"/>
+ 	select case when count(*) is null then 0 else count(*) end as unSignUpNum,case when sum(ye) is null then 0 else sum(ye) end as unSignUpAmount from (select TradeGUID,sum(RmbYe) as ye from s_Fee where TradeGUID in (select tradeGuid from #unSignUp) and ye!=0 GROUP BY tradeguid) a
+	drop table #unSignUp
+ </select>
+ <sql id="unLendingCommon">
+ 	select * into #unLending
+		from( 
+		SELECT     R.RoomInfo,R.BldArea, T.CstAllName AS CstName, 
+		                     cstname1.MobileTel,cstname1.Gender,cstname1.HomeTel,cstname1.OfficeTel,cstname1.Fax, 
+		                     CONVERT(VARCHAR(20), C.QSDate, 23) AS QStime, <!-- DATEDIFF(dd, sf.YQdate, GETDATE()) AS overDays, --> 
+		                      C.RmbHtTotal, (sf.QKTotal+ISNULL(sf3.QKTotal2,0) - ISNULL(sf2.ckTotal,0)) AS QKTotal, '签约' AS saleStatus, vm.UserName AS UserName, C.ProjGUID, C.RoomGUID, C.TradeGUID, C.ContractGUID,opp.UserGUID as uId,
+		                      gjjl.createDate,gjjl.nextDate,gjjl.content,ext.postponeDate,case when ext.level2 is null or ext.level2=0 then '0' else '1' end as level2,
+							  case when (sf.QKTotal+ISNULL(sf3.QKTotal2,0) - ISNULL(sf2.ckTotal,0))='.0000' then 0	<!--2016-7-13  -->						  
+							  <!-- case 2016-7-13--> when (case when ext.postponeDate is null then DATEDIFF(dd, C.QSDate, GETDATE()) else DATEDIFF(dd, ext.postponeDate, GETDATE()) end ) &lt; 0 then 0 
+							  else (case when ext.postponeDate is null then DATEDIFF(dd, C.QSDate, GETDATE()) else DATEDIFF(dd, ext.postponeDate, GETDATE()) end) end as overDays,
+							  case when C.AjBank is null or C.AjBank='' then C.GjjBank else C.AjBank end as bank
+		FROM         dbo.s_Trade AS T 
+		LEFT OUTER JOIN dbo.s_Trade2Cst AS cst1 ON T.TradeGUID = cst1.TradeGUID AND cst1.CstNum = 1 
+		LEFT OUTER JOIN dbo.p_Customer AS cstname1 ON cst1.CstGUID = cstname1.CstGUID 
+		LEFT OUTER JOIN dbo.s_Contract AS C ON C.TradeGUID = T.TradeGUID 
+		LEFT OUTER JOIN dbo.p_Room AS R ON C.RoomGUID = R.RoomGUID 
+		LEFT OUTER JOIN dbo.p_Building AS B ON B.BldGUID = R.BldGUID 
+		LEFT OUTER JOIN dbo.s_Opportunity AS opp ON opp.CstGUID=cstname1.CstGUID AND not exists (SELECT 1 from s_Opportunity WHERE CstGUID=opp.CstGUID AND scrm_timestamp_data>opp.scrm_timestamp_data ) 
+        <!-- INNER JOIN dbo.s_Opportunity op ON op.CstGUID=cst1.CstGUID 
+        INNER JOIN dbo.vs_user_tm vm ON vm.value=cast(op.UserGUID AS varchar(50)) and vm.groupName like '%销售%'2016-7-4--> 
+        INNER JOIN dbo.vs_user_ntm vm ON vm.value=cast(opp.UserGUID AS varchar(50)) and (vm.groupName like '%销售%' or vm.groupName='离职组' or vm.userName='其他')
+		LEFT JOIN (select * from zs_trade_gjjl a 
+     		where not exists (select * from zs_trade_gjjl where a.TradeGUID=TradeGUID and createDate>a.createDate)) as gjjl ON gjjl.tradeGUID=convert(VARCHAR(50),T.TradeGUID)
+		LEFT JOIN zs_trade_ext ext on ext.tradeGUID = T.TradeGUID
+		INNER JOIN (SELECT     SUM(RmbYe) AS QKTotal, TradeGUID, MIN(lastDate) AS YQdate 
+		                           FROM          dbo.s_Fee 
+		                           WHERE
+		                           <if test="xsFee.rmbYe == 1">
+		                           (RmbYe > 0)
+		                           </if>
+		                           <if test="xsFee.rmbYe == 2">
+		                           (RmbYe = 0)	
+		                           </if>
+		                           <if test="xsFee.rmbYe == 3">
+		                           (RmbYe >= 0)
+		                           </if>
+		                           AND (lastDate IS NOT NULL) <!-- AND (DATEDIFF(dd, lastDate, GETDATE()) > 0) --> AND (ItemType = '贷款类房款') AND (ItemName = '银行按揭' OR 
+		                                                  ItemName = '公积金') 
+		                           GROUP BY TradeGUID 
+		                           <if test="xsFee.rmbYe !=null and ''!=xsFee.rmbYe">
+		                           HAVING
+		                           </if>      
+		                           <if test="xsFee.rmbYe == 1">
+		                           (SUM(RmbYe) > 0)
+		                           </if>
+		                           <if test="xsFee.rmbYe == 2">
+		                           (SUM(RmbYe) = 0)	
+		                           </if>
+		                           <if test="xsFee.rmbYe == 3">
+		                           (SUM(RmbYe) >= 0)
+		                           </if>
+		                            )AS sf ON sf.TradeGUID = C.TradeGUID
+		LEFT JOIN (SELECT     SUM(DsAmount) AS ckTotal, TradeGUID 
+                                FROM          dbo.s_Fee 
+                                
+                                GROUP BY TradeGUID 
+                                HAVING      (SUM(DsAmount) > 0) 
+                                )AS sf2 ON sf2.TradeGUID=c.TradeGUID 
+        LEFT JOIN (SELECT     SUM(RmbYe) AS QKTotal2, TradeGUID 
+                                FROM          dbo.s_Fee 
+                                WHERE
+                                <if test="xsFee.rmbYe == 1">
+		                           (RmbYe > 0)
+		                        </if>
+		                        <if test="xsFee.rmbYe == 2">
+		                           (RmbYe = 0)	
+		                        </if>
+		                        <if test="xsFee.rmbYe == 3">
+		                           (RmbYe >= 0)
+		                        </if> 
+		                        AND (lastDate IS NOT NULL) <!-- AND (DATEDIFF(dd, lastDate, GETDATE()) > 0) --> AND (ItemType = '非贷款类房款') AND (ItemName ='首期') 
+                                                        
+                                GROUP BY TradeGUID 
+                                <if test="xsFee.rmbYe !=null and ''!=xsFee.rmbYe">
+                                HAVING 
+                                </if>     
+                                 <if test="xsFee.rmbYe == 1">
+		                           (SUM(RmbYe) > 0)
+		                           </if>
+		                           <if test="xsFee.rmbYe == 2">
+		                           (SUM(RmbYe) = 0)	
+		                           </if>
+		                           <if test="xsFee.rmbYe == 3">
+		                           (SUM(RmbYe) >= 0)
+		                           </if>
+                                ) AS sf3 ON sf3.TradeGUID=c.TradeGUID 
+		WHERE     (C.Status = '激活') 
+		AND (C.AjTotal > 0) OR(C.Status = '激活') 
+		AND (C.GjjTotal > 0)
+		) x
+		where 1=1
+		<if test="xsOpp.userGuid!=null and ''!=xsOpp.userGuid">
+			and uId = #{xsOpp.userGuid}
+		</if> 
+		<if test="xsOpp.projGuid!=null and ''!=xsOpp.projGuid">
+			and ProjGUID = #{xsOpp.projGuid}
+		</if>
+		<if test="xsCst.cstName!=null and ''!=xsCst.cstName">
+			and CstName = #{xsCst.cstName}
+		</if>
+		<if test="xsCst.mobileTel!=null and ''!=xsCst.mobileTel">
+			and (MobileTel = #{xsCst.mobileTel} or OfficeTel = #{xsCst.mobileTel} or HomeTel = #{xsCst.mobileTel} or Fax = #{xsCst.mobileTel})
+		</if>
+		<if test="xsTrade.tradeGuid!=null and ''!=xsTrade.tradeGuid">
+			and TradeGUID = #{xsTrade.tradeGuid}
+		</if>
+		<if test="xsExt.level!=null and ''!=xsExt.level">
+			and level2 in (${xsExt.level})
+		</if>
+		<if test="xsOther.toUrged!=null and ''!=xsOther.toUrged">
+			and DATEDIFF(dd,nextDate,GETDATE()) = 0
+		</if>
+		<if test="xsOther.bank!=null and ''!=xsOther.bank">
+			and bank = #{xsOther.bank}<!--Add 2016-7-14  -->
+		</if>
+		<if test="xsSearch.sortName !=null and ''!=xsSearch.sortName">
+			order by ${xsSearch.sortName} ${xsSearch.sortDir},tradeGuid
+		</if>
+ </sql>
+ <select id="getUnLendingInfoDao" parameterType="com.zs.crm.entity.XsBusinessUrgedInfoVo" resultType="com.zs.crm.entity.XsSaleStatisticsResultVo">
+ 	<include refid="unLendingCommon"/>
+ 	select case when count(*) is null then 0 else count(*) end as unLendingNum,case when sum(ye) is null then 0 else sum(ye) end as unLendingAmount from (select TradeGUID,sum(RmbYe) as ye from s_Fee where TradeGUID in (select tradeGuid from #unLending)  GROUP BY tradeguid) a
+	drop table #unLending
+ </select>
+ </mapper>

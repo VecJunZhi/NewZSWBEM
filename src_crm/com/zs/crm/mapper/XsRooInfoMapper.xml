@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper  namespace="com.zs.crm.dao.XsRoomInfoDao">
+ 	<resultMap id="roomInfoResult" type="com.zs.crm.entity.XsRoomInfoVo">
+  	    <id property="roomNo" column="Room" />
+  	    <result property="proNo" column="ProjGUID"/> 
+  	    <result property="bldNo" column="BldGUID"/>
+  		<result property="unitNo" column="Unit"/>
+  		<result property="roomStatus" column="Status"/>
+  		<result property="statusClass" column="statusClass"/>
+	</resultMap>
+	<resultMap id="floorInfoResult" type="com.zs.crm.entity.XsUnitInfoVo">
+    	<id property="floorNo" column="Floor"/>
+    	<collection property="roomList" resultMap="roomInfoResult" />
+	</resultMap>
+	<!--  -->
+ 	<select id="getXsRoomInfoByUnitNoDao" parameterType="com.zs.crm.entity.XsRoomSearchVo" resultMap="floorInfoResult">
+ 		select a.Unit,a.Floor,a.Room,a.Status,(CASE when a.Status in('签约','认购') then 'ys' when a.Status ='待售' then 'ws' when a.Status='销控' then 'wfp'
+		else '' end) as statusClass,a.BldGUID,a.ProjGUID from p_Room a left join p_Building b on a.BldGUID=b.BldGUID where a.ProjGUID=#{projGuid}
+ 		<if test="bldName!=null and ''!=bldName">
+ 			and b.BldName=#{bldName}
+ 		</if>
+ 		<if test="bldGuid!=null and ''!=bldGuid">
+ 			and b.BldGUID=#{bldGuid}
+ 		</if>
+ 		<if test="unit !=null and ''!=unit">
+ 			and a.Unit=#{unit}
+ 		</if>
+ 		<if test="status !=null and ''!=status">
+ 			and a.Status in (${status})
+ 		</if>
+ 		<if test="huXing !=null and ''!=huXing">
+ 			and a.HuXing in (${huXing})
+ 		</if>
+ 		<if test="minArea!=null and ''!=minArea">
+ 			and a.BldArea > ${minArea}
+ 		</if>
+ 		<if test="maxArea!=null and ''!=maxArea">
+ 			and a.BldArea &lt; ${maxArea}
+ 		</if>
+ 		<if test="minTotalPrice!=null and ''!=minTotalPrice">
+ 			and a.Total > ${minTotalPrice}
+ 		</if>
+ 		<if test="maxTotalPrice!=null and ''!=maxTotalPrice">
+ 			and a.Total &lt; ${maxTotalPrice}
+ 		</if>
+ 		<if test="roomStru!=null and ''!=roomStru">
+	 		and a.RoomStru in (${roomStru})
+	 	</if>
+		order by convert(int,a.Floor) desc
+ 	</select>
+ 	<!-- 查询已售、待售、销控的数量 -->
+ 	<select id="getXsCountInfoByBulidNoDao" parameterType="com.zs.crm.entity.XsRoomSearchVo" resultType="com.zs.crm.entity.XsRoomCountInfoVo">
+ 		select SUM(case when a.Status in('签约','认购','销控','待售') then 1 else 0 end) AS total,SUM(case when a.Status in('签约','认购') then 1 else 0 end) AS sold, 
+ 		SUM(case when a.Status='销控' then 1 else 0 end) AS preControl, SUM(case when a.Status='待售' then 1 else 0 end) AS unSold  from p_Room a 
+ 		left join p_Building b on a.BldGUID=b.BldGUID where a.ProjGUID=#{projGuid} 
+		<if test="bldName !=null and ''!=bldName">
+			and b.BldName=#{bldName} 
+		</if>
+ 		<if test="bldGuid!=null and ''!=bldGuid">
+ 			and b.BldGUID=#{bldGuid}
+ 		</if>
+ 		<if test="unit !=null and ''!=unit">
+ 			and a.Unit=#{unit}
+ 		</if>
+ 		<if test="status !=null and ''!=status">
+ 			and a.Status in (${status})
+ 		</if>
+ 		<if test="huXing !=null and ''!=huXing">
+ 			and a.HuXing in (${huXing})
+ 		</if>
+ 		<if test="minArea!=null and ''!=minArea">
+ 			and a.BldArea > ${minArea}
+ 		</if>
+ 		<if test="maxArea!=null and ''!=maxArea">
+ 			and a.BldArea &lt; ${maxArea}
+ 		</if>
+ 		<if test="minTotalPrice!=null and ''!=minTotalPrice">
+ 			and a.Total > ${minTotalPrice}
+ 		</if>
+ 		<if test="maxTotalPrice!=null and ''!=maxTotalPrice">
+ 			and a.Total &lt; ${maxTotalPrice}
+ 		</if>
+ 		<if test="roomStru!=null and ''!=roomStru">
+	 		and a.RoomStru in (${roomStru})
+	 	</if>
+ 	</select>
+ 	<!--查询楼栋的单元信息  -->
+ 	<select id="getXsUnitInfoByBulidNoDao" parameterType="com.zs.crm.entity.XsRoomSearchVo" resultType="String">
+ 		select case when b.Unit is null then a.BldName when b.Unit='' then a.BldName else b.Unit end from p_Building a LEFT JOIN p_BuildUnit b on a.BldGUID=b.BldGUID where a.ProjGUID=#{projGuid} and a.BldGUID=#{bldGuid} 
+ 		order by b.UnitNo
+ 	</select>
+ 	<!-- 查询房源详情，包括房间信息和成交信息  -->
+ 	<resultMap id="roomResourceInfoResult" type="com.zs.crm.entity.XsRoomResourceInfoVo" >
+ 		<id property="resourceId" column="CstName"/> 
+ 		<association property="bargainInfo" javaType="com.zs.crm.entity.XsRoomBargainInfoVo">
+			<id property="cstName" column="CstName"/>
+			<result property="mobileTel" column="CstTel"/>
+			<result property="roomTotal" column="CjTotal"/>
+			<result property="bldCjPrice" column="BldCjPrice"/>
+			<result property="tnCjPrice" column="TnCjPrice"/>
+			<result property="qsDate" column="QsDate"/>
+			<result property="ywy" column="Ywy"/>
+		</association>
+ 		<association property="roomInfo" javaType="com.zs.crm.entity.XsRoomInfoVo"> 
+			<id property="roomInfo" column="RoomInfo"/>
+			<result property="huXing" column="HuXing"/>
+			<result property="roomStru" column="RoomStru"/>
+			<result property="floor" column="Floor"/>
+			<result property="west" column="West"/>
+			<result property="bldArea" column="BldArea"/>
+			<result property="tnArea" column="TnArea"/>
+			<result property="price" column="Price"/>
+			<result property="tnPrice" column="TnPrice"/>
+			<result property="total" column="Total"/>
+		</association> 
+ 	</resultMap>
+ 	<select id="getXsRoomInfoByRoomNoDao" parameterType="com.zs.crm.entity.XsRoomSearchVo" resultMap="roomResourceInfoResult">
+ 		select a.RoomGUID,a.Status,a.RoomInfo,a.HuXing,a.RoomStru,a.Floor,a.West,a.BldArea,a.TnArea,a.Price,a.TnPrice,a.Total,b.CstName,SUBSTRING(b.CstTel,4,11) as CstTel,b.BldCjPrice,b.TnCjPrice,
+ 		b.CjTotal,b.Ywy,b.QsDate,b.OrderType,b.CloseReason from p_Room a LEFT JOIN es_Order b on a.RoomGUID=b.RoomGUID  and b.CloseReason not in ('作废','换房') 
+ 		where a.ProjGUID=#{projGuid} and a.BldGUID=#{bldGuid} and a.Unit=#{unit} and a.Room = #{roomNo}  
+ 	</select>
+ 	<!--  -->
+ 	<select id="getXsBldNameAndCountInfoDao" parameterType="com.zs.crm.entity.XsRoomSearchVo" resultType="com.zs.crm.entity.XsRoomInfoVo">
+ 		select b.BldName as bldName,count(a.BldGUID) as roomCount from p_Room a LEFT JOIN p_Building b on a.BldGUID=b.BldGUID group BY a.BldGUID,b.BldName
+ 		
+ 	</select>
+ 	<!--在当前工程中查询，显示所有符合条件的楼栋  用在选择楼栋和在当前工程查询使用-->
+ 	<select id="getXsBldInfoByProNoDao" parameterType="com.zs.crm.entity.XsRoomSearchVo" resultType="com.zs.crm.entity.XsRoomCountInfoVo">
+ 		SELECT  BldName as name,BldGUID as bldGuid,BldFullName as fullName,sold,nosale as unSold,salecontrol as preControl,RoomNum as total FROM     
+		( 
+		SELECT BUGUID , ProjGUID AS BldGUID , 
+		ProjCode AS BldCode , 
+		 ProjName AS BldName , 
+		 ProjName AS BldFullName , 
+		 0 AS isbld , 
+		 '' AS productname ,                     
+		  '' AS parentcode ,                     
+		   NULL AS FloorNum ,                     
+		   NULL AS PlanBldArea ,                     
+		    NULL AS FactBldArea ,                     
+		    NULL AS RoomNum , 
+		    null AS sold , 
+		    NULL AS nosale, 
+		    NULL AS salecontrol ,                   
+		     NULL AS BldAreaTotal ,                     
+		     NULL AS TnAreaTotal ,                     
+		     0 AS Level ,                     
+		      '0001' AS OrderHierarchyCode           
+		      FROM      p_Project           
+		      WHERE     ProjGUID = #{projGuid}           
+		       UNION           
+		 SELECT    BUGUID ,                     
+		  BldGUID ,                     
+		   BldfullCode AS BldCode ,                     
+		   BldName ,                   
+		   BldFullName ,                   
+		  isbld + 1 AS isbld ,                     
+		  productname ,                     
+		   parentcode ,                     
+		   FloorNum ,                     
+		    CASE WHEN isbld = 1 THEN PlanBldArea ELSE NULL END AS PlanBldArea ,                     
+		    CASE WHEN isbld = 1 THEN FactBldArea   ELSE NULL  END FactBldArea ,                     
+		    CASE WHEN isbld = 1 THEN (SELECT COUNT(*) FROM dbo.p_Room WHERE BldGUID = dbo.ep_Building .BldGUID AND IsVirtualRoom = 0
+		   <if test="status !=null and ''!=status">
+ 				and dbo.p_Room.Status in (${status})
+ 			</if>
+ 			<if test="huXing !=null and ''!=huXing">
+ 				and dbo.p_Room.HuXing in (${huXing})
+	 		</if>
+	 		<if test="minArea!=null and ''!=minArea">
+	 			and dbo.p_Room.BldArea > ${minArea}
+	 		</if>
+	 		<if test="maxArea!=null and ''!=maxArea">
+	 			and dbo.p_Room.BldArea &lt; ${maxArea}
+	 		</if>
+	 		<if test="minTotalPrice!=null and ''!=minTotalPrice">
+	 			and dbo.p_Room.Total > ${minTotalPrice}
+	 		</if>
+	 		<if test="maxTotalPrice!=null and ''!=maxTotalPrice">
+	 			and dbo.p_Room.Total &lt; ${maxTotalPrice}
+	 		</if>
+	 		<if test="roomStru!=null and ''!=roomStru">
+	 			and dbo.p_Room.RoomStru in (${roomStru})
+	 		</if>
+		    )  ELSE NULL END RoomNum , 
+		    CASE WHEN IsBld = 1 THEN (SELECT COUNT(*) FROM dbo.p_Room WHERE BldGUID = dbo.ep_Building .BldGUID AND IsVirtualRoom = 0 and dbo.p_Room.Status IN('签约','认购')) ELSE null END sold , 
+		    CASE WHEN IsBld = 1 THEN (SELECT COUNT(*) FROM dbo.p_Room WHERE BldGUID = dbo.ep_Building .BldGUID AND IsVirtualRoom = 0 and dbo.p_Room.Status ='待售' ) ELSE null END nosale , 
+		    CASE WHEN IsBld = 1 THEN (SELECT COUNT(*) FROM dbo.p_Room WHERE BldGUID = dbo.ep_Building .BldGUID AND IsVirtualRoom = 0 and dbo.p_Room.Status ='销控' ) ELSE null END salecontrol , 
+		                        
+		    CASE WHEN isbld = 1 THEN (SELECT ISNULL(SUM(BldArea), 0) FROM dbo.p_Room WHERE BldGUID = dbo.ep_Building .BldGUID AND IsVirtualRoom = 0)ELSE NULL END BldAreaTotal ,                       
+		    CASE WHEN isbld = 1 THEN (SELECT ISNULL(SUM(TnArea), 0) FROM dbo.p_Room WHERE BldGUID = dbo.ep_Building .BldGUID AND IsVirtualRoom = 0) ELSE NULL END TnAreaTotal ,   
+		     Level ,                     
+		     OrderHierarchyCode           
+		     FROM ep_Building           
+		      WHERE     ProjGUID = #{projGuid}  
+		    <if test="bldGuid !=null and ''!=bldGuid">
+			and BldGUID=#{bldGuid}
+			</if>      
+		   ) a  where isbld != 0 ORDER BY a.OrderHierarchyCode
+ 	</select>
+ </mapper>

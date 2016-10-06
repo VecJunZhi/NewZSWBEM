@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zs.common.dao.ZsUpdateLogDao" >
+	<!-- 更改阅读状态 -->
+	  <update id="editLogType" > 	
+  			 update zs_update_log
+  			 <set> 			 	
+  			 	logType='已读'
+  			 </set>			 
+    </update> 
+	<!-- 查找未读 日志-->
+	 <select id="getReadType" parameterType="com.zs.common.entity.ZsUpdateLogEntity" resultType="com.zs.common.entity.ZsUpdateLogEntity">
+		select logSubject,logContent,logClasses,userName,remark,logTime,row_number() over(order by logTime desc) as serialNum,logType into #tmp_table2
+		from zs_update_log 
+		<include refid="paging2"/>
+		order by logTime desc
+		DROP TABLE #tmp_table2;
+	</select>
+	<sql id="paging2">
+ 		不分页
+		<if test="length ==null or ''== length"> 
+			SELECT * FROM #tmp_table2  where logType='未读'
+		</if>
+		分页
+		<if test="length !=null and ''!= length">
+			select top ${length} * from #tmp_table2  where serialNum&gt;${startIndex} and logType='未读'
+		</if>
+ 	</sql> 
+	<!-- 查找当前系统登录用户 -->
+	<select id="getUserName"  resultType="com.zs.rbac.entity.User">
+  		select  username
+  		from zs_rbac_user 
+  		order by userID asc;
+  	</select>
+	<!-- 查找日志 -->
+	<sql id="condition_select">
+  		<if test="logClasses!=null and ''!=logClasses">
+  			and	logClasses=#{logClasses}
+  		</if>
+  		<if test="userName!=null and ''!=userName">
+  			and	userName=#{userName}
+  		</if>
+  	</sql>
+	<sql id="paging">
+ 		<!-- 不分页 -->
+		<if test="length ==null or ''== length"> 
+			SELECT * FROM #tmp_table  where distinState='0'
+		</if>
+		<!-- 分页 -->
+		<if test="length !=null and ''!= length">
+			select top ${length} * from #tmp_table where serialNum&gt;${startIndex} and distinState='0'
+		</if>
+		<include refid="condition_select" /> 
+ 	</sql>
+	<select id="getZsUpdateLog" parameterType="com.zs.common.entity.ZsUpdateLogEntity" resultType="com.zs.common.entity.ZsUpdateLogEntity">
+  		select  logTime,logSubject,logContent,
+  			    userName,remark,logClasses,distinState,
+  			    row_number() over(order by logTime desc) as serialNum  into #tmp_table
+  		from zs_update_log 
+  		<include refid="paging"/>
+  		order by logTime desc
+  		DROP TABLE #tmp_table;
+  	</select>
+  	<!-- 增加日志 -->
+    <insert id="insertUpdateLog" parameterType="com.zs.common.entity.ZsUpdateLogEntity" >
+         insert into zs_update_log
+         <trim prefix="(" suffix=")" suffixOverrides="," >
+           <if test="logSubject!= null" >
+              logSubject,
+           </if>
+      	   <if test="logContent!= null" >
+              logContent,
+      	   </if>
+      	   <if test="logClasses!= null" >
+              logClasses,
+      	   </if>
+      	   <if test="userName!= null" >
+              userName,
+      	   </if>
+              logTime,distinState
+    	</trim>
+    	<trim prefix="values (" suffix=")" suffixOverrides="," >
+         <if test="logSubject!= null" >
+           #{logSubject},
+         </if>
+         <if test="logContent!= null" >
+           #{logContent},
+         </if>
+         <if test="logClasses!= null" >
+           #{logClasses},
+         </if>
+         <if test="userName!= null" >
+           #{userName},
+         </if>
+           getDate(),'0'
+        </trim>
+  </insert>
+  <!-- 修改日志 -->
+  <update id="editUpdateLog" parameterType="com.zs.common.entity.ZsUpdateLogEntity"> 	
+  	    update zs_update_log
+  	  <set> 			 	
+  		logSubject=#{logSubject},
+  		logContent=#{logContent}
+  	  </set>	
+  		where logTime=#{logTime}  	 
+  </update>
+  <!-- 删除日志 -->
+  <delete id="delLog" parameterType="com.zs.common.entity.ZsUpdateLogEntity">
+		delete from zs_update_log
+		where logTime=#{logTime};
+  </delete>
+  <!-- 用户查询日志列表 -->
+  <select id="showLogList" resultType="com.zs.common.entity.ZsUpdateLogEntity">
+  		select logSubject,logContent,logTime,distinState
+  		from zs_update_log
+  		where distinState='0'
+  		order by logTime desc;
+  </select>
+</mapper>
+	
+
+
+

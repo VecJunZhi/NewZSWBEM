@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="com.zs.crm.dao.CusServiceContractSignDao">
+ 	<sql id="condition_select">
+ 		<if test="cstName !=null and ''!= cstName"> 
+			and cstName like '%${cstName}%'
+		</if>
+		<if test="mobileTel !=null and ''!= mobileTel"> 
+			and mobileTel like '%${mobileTel}%'
+		</if>
+		<if test="zygw !=null and ''!= zygw"> 
+			and zygw=#{zygw}
+		</if>
+		<if test="paymentWay !=null and ''!= paymentWay"> 
+			and paymentWay like '%[${paymentWay}]%'
+		</if>
+		<if test="projGuid !=null and ''!= projGuid">
+		    and projGuid =#{projGuid}
+		</if>
+ 	</sql>
+ 	<sql id="paging">
+ 		<!-- 不分页 -->
+		<if test="length ==null or ''== length"> 
+			SELECT * FROM #tmp_table  where 1=1
+		</if>
+		<!-- 分页 -->
+		<if test="length !=null and ''!= length">
+			select top ${length} * from #tmp_table where serialNum &gt;${startIndex}
+		</if>
+		<include refid="condition_select" />
+ 	</sql>
+ 	<select id="getCusServiceContractSignList" parameterType="com.zs.crm.entity.CstServiceContractSignVo" resultType="com.zs.crm.entity.CstServiceContractSignVo">
+ 		SELECT
+			projGuid,
+			cstName,
+			CstTel AS mobileTel,
+			SUBSTRING (RoomInfo, 12, 20) AS roomInfo,
+			ContractNO AS contractNum,
+			QSDate AS contractSignDate,
+			BldArea AS area,
+			Price as unitPrice,
+			RoomTotal AS tradeAmount,
+			PayformName AS paymentWay ,
+			ywy AS zygw,
+			CASE
+		WHEN PayformName LIKE '%银行按揭%'
+		OR PayformName LIKE '%贷款%' THEN
+			(RoomTotal - AjTotal)
+		ELSE
+			(RoomTotal - GjjTotal)
+		END AS initPayment ,
+		
+		 CASE
+		WHEN PayformName LIKE '%银行按揭%'
+		OR PayformName LIKE '%贷款%' THEN
+			Ajtotal
+		ELSE
+			Gjjtotal
+		END AS loanAmount ,
+		 CASE
+		WHEN PayformName LIKE '%银行按揭%'
+		OR PayformName LIKE '%贷款%' THEN
+			AjYear
+		ELSE
+			GjjYear
+		END AS loanYear,
+		row_number() over(order by QSDate desc) as serialNum  into #tmp_table
+		FROM
+			es_Contract
+		WHERE
+			Status = '激活'
+		<include refid="paging" />
+		ORDER BY contractSignDate desc
+		DROP TABLE #tmp_table
+ 	</select>
+ </mapper>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper  namespace="com.zs.crm.dao.XsCustAnalysisDao">
+ 	<select id="getCstCountByFollowWayDao" parameterType="com.zs.crm.entity.XsSaleManagerEntity" resultType="com.zs.crm.entity.XsCustAnalysisShowEntity">
+ 		select SUM(case when Gjfs='客户来电' then 1 else 0 end) AS call, SUM(case when Gjfs='现场接待' then 1 else 0 end) AS visit 
+ 		from s_Opp2Gjjl where GjDate between #{beginTime} and #{endTime} and ProjGUID='8FFF2136-61EA-E411-BAAF-FCAA145C42F2' 
+ 	</select>
+ 	<select id="getCstCountByIntentionDao" parameterType="com.zs.crm.entity.XsSaleManagerEntity" resultType="com.zs.crm.entity.XsCustAnalysisShowEntity">
+ 		select SUM(CASE WHEN Gfyx='高意向' THEN 1 ELSE 0 END) AS highIntention, SUM(CASE WHEN Gfyx='一般意向' THEN 1 ELSE 0 END) AS generalIntention, 
+		SUM(CASE WHEN Gfyx='无意向' THEN 1 ELSE 0 END) AS noIntention, SUM(CASE WHEN Gfyx='必买' THEN 1 ELSE 0 END) AS mustBuy from (select DISTINCT CstGUID, 
+		Gfyx from s_Opportunity where  Status not in ('签约','认购','丢失') and CreatedOn between #{beginTime} and #{endTime} )aa 
+ 	</select>
+ 	<select id="getCstCountByStatusDao" parameterType="com.zs.crm.entity.XsSaleManagerEntity" resultType="com.zs.crm.entity.XsCustAnalysisShowEntity">
+ 		select SUM(CASE WHEN status='丢失' THEN 1 ELSE 0 END) AS invalidCst, SUM(CASE WHEN status='认购' THEN 1 ELSE 0 END) AS buyCst, SUM(CASE WHEN status='签约' 
+ 		THEN 1 ELSE 0 END) AS signUpCst from (select DISTINCT CstGUID,Status from s_Opportunity where CreatedOn between #{beginTime} and #{endTime})aaa
+ 	</select>
+ 	<select id="getCstClassInfoByTypeAndDateDao" parameterType="com.zs.crm.entity.XsSaleManagerEntity" resultType="com.zs.crm.entity.XsSaleManagerEntity">
+	 	  
+	 	<if test="groupBy!=null and groupBy!='MainMediaName'">
+	 		select C.${groupBy} AS groupName,COUNT(isnull (C.${groupBy},0))AS groupNum 
+	 	</if>
+	 	<if test="groupBy!=null and groupBy=='MainMediaName'">
+	 		select B.${groupBy} AS groupName,COUNT(isnull (B.${groupBy},0))AS groupNum 
+	 	</if>
+		from s_Opp2Gjjl A 
+		LEFT JOIN s_Opportunity B ON B.OppGUID=A.OppGUID 
+		LEFT JOIN p_CstAttribute C ON C.CstGUID=B.CstGUID
+		<!-- where A.GjDate between #{beginTime} and #{endTime} -->  
+		<if test="gjfs !=null and ''!=gjfs">
+			where A.GjDate between #{beginTime} and #{endTime}
+			AND A.Gjfs=#{gjfs} 
+		</if>
+		<if test="gfyx != null and gfyx=='intention'">
+			where B.CreatedOn between #{beginTime} and #{endTime}
+			AND A.Gfyx in ('无意向','一般意向','高意向','必买')
+		</if>
+		<if test="gfyx !=null and gfyx!='intention'">
+			where B.CreatedOn between #{beginTime} and #{endTime}
+			AND A.Gfyx=#{gfyx}
+		</if>
+		<if test="status!=null and ''!=status">
+			where B.CreatedOn between #{beginTime} and #{endTime}
+			AND A.Status=#{status}
+		</if> 
+		<if test="groupBy!=null and groupBy=='MainMediaName'">
+	 		<!-- AND B.${groupBy} != '' --> group By  B.${groupBy} <!-- order by COUNT(B.${groupBy}) desc -->
+	 	</if>
+	 	<if test="groupBy!=null and groupBy!='MainMediaName'">
+	 		<!-- AND C.${groupBy} != '' --> group By  C.${groupBy} <!-- order by COUNT(C.${groupBy}) desc -->
+	 	</if> 
+	 	order BY groupNum DESC 
+ 	</select>
+ 	<select id="getCallAndVisitInfoByCycleDao" parameterType="com.zs.crm.entity.XsSaleManagerEntity" resultType="com.zs.crm.entity.XsSaleManagerEntity">
+ 		<if test="groupBy !=null and groupBy=='day'">
+ 			select GjDate AS groupName,
+ 		</if>
+ 		<if test="groupBy !=null and groupBy=='week'">
+ 			<!-- select (DAY(GjDate)-1)/7  AS groupName, -->
+ 			select groupName,sum(groupNum)as groupNum from(select DATEDIFF(DAY,#{beginTime},GjDate)/7+1   AS groupName, 
+ 		</if>
+ 		<if test="groupBy !=null and groupBy=='month'">
+ 			select MONTH(GjDate) AS groupName,
+ 		</if>
+ 		<if test="groupBy !=null and groupBy=='year'">
+ 			select YEAR(GjDate) AS groupName,
+ 		</if>
+ 			SUM(case when Gjfs=#{gjfs} then 1 else 0 end) AS groupNum from s_Opp2Gjjl where GjDate between #{beginTime} and #{endTime} and 
+ 			ProjGUID='8FFF2136-61EA-E411-BAAF-FCAA145C42F2' 
+ 		<if test="groupBy !=null and groupBy=='day'">
+ 			GROUP BY GjDate ORDER BY GjDate
+ 		</if> 
+ 		<if test="groupBy !=null and groupBy=='week'">
+ 			 GROUP BY GjDate)aaa 
+       		 GROUP BY groupName 
+ 			 <!-- GROUP BY (DAY(GjDate)-1)/7 ORDER BY (DAY(GjDate)-1)/7 -->
+ 		</if>
+ 		<if test="groupBy !=null and groupBy=='month'">
+ 			GROUP BY MONTH(GjDate) ORDER BY MONTH(GjDate)
+ 		</if>
+ 		<if test="groupBy !=null and groupBy=='year'">
+ 			GROUP BY YEAR(GjDate) ORDER BY YEAR(GjDate)
+ 		</if>
+ 	</select>
+ </mapper>

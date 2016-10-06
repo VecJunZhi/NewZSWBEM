@@ -1,0 +1,35 @@
+/WEB-INF/jsp/mcrm/house/
+  > custAnalysis     客户分析
+          feature.jsp    客户特征分析
+          followReport.jsp  客户跟进分析
+          percentReport.jsp   客户转化率分析
+  > salePerformance
+          index.jsp  案场销售业绩
+          budgetEdit.jsp  销售预算目标修改
+          performanceDetail   业绩展示
+
+  > saleManage       案场管理
+          index.jsp      客户分析首页
+          saleReport.jsp 案场报表
+          saleDetail.jsp 认购、转签明细
+	  
+  > customer         客户分配
+          index.jsp   跟进中的客户
+          customerList.jsp   客户详情
+          
+  > room			 房源管理
+  		  index.jsp   房源管理首页（需要调）
+  		  roomInfo.jsp   房源信息详情
+  		  searchRoom.jsp 搜索房源（需要调）
+  		  searchRoomBulid.jsp   按项目搜索房源
+  		  selectRoomBulid 选择楼栋信息
+  		  
+
+  > myPerformance    个人业绩
+  		  myRank.jsp      个人业绩首页（完）
+  		  myTarget.jsp    个人预算编辑 （完）
+  		  detailDeal.jsp  成交明细
+  		  
+  		 
+  
+  

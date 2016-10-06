@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper  namespace="com.zs.common.dao.InspectRoomDao">
+ 	<resultMap type="com.zs.common.entity.BuildingExtTableEntity" id="buildingExtResult" >
+ 		<id column="bldGuid" property="bldGuid" />
+ 		<result column="bldCheckStatus" property="bldCheckStatus"/>
+ 	</resultMap>
+ 	
+ 	<resultMap id="inspectRoomResult" type="com.zs.common.entity.InspectRoomTableEntity">
+ 		<id column="id" property="id"/>
+ 		<result column="bldGuid"  property="bldGuid" />
+	    <result column="roomGuid"  property="roomGuid" />
+	    <result column="projGuid"  property="projGuid" />
+	    <result column="checkStatus"  property="checkStatus" />
+	    <result column="roomStatus"  property="roomStatus" />
+	    <result column="repairTimes"  property="repairTimes" />
+	    <result column="createDate"  property="createDate" />
+	    <result column="endDate"  property="endDate" />
+ 	</resultMap>
+ 	
+ 	<resultMap id="issueFeedbackResult" type="com.zs.common.entity.IssueFeedbackTableEntity">
+	    <id column="id"  property="id" />
+	    <result column="issuesId"  property="issuesId" />
+	    <result column="backContent"  property="backContent" />
+	    <result column="createDate"  property="createDate" />
+	    <result column="repairMan"  property="repairMan" />
+	    <result column="operId"  property="operId" />
+	    <result column="fbType"  property="fbType" />
+  	</resultMap>
+  	
+  	<resultMap id="issuesDetailResult" type="com.zs.common.entity.IssuesDetailTableEntity">
+	    <id column="id"  property="id" />
+	    <result column="issueRoomId"  property="issueRoomId" />
+	    <result column="issueCode"  property="issueCode" />
+	    <result column="position"  property="position" />
+	    <result column="level"  property="level" />
+	    <result column="issueDesc"  property="issueDesc" />
+	    <result column="imgPath"  property="imgPath" />
+	    <result column="status"  property="status" />
+	    <result column="createDate"  property="createDate" />
+	    <result column="endDate"  property="endDate" />
+  	</resultMap>
+  	
+  	<resultMap id="issuesRoomResult" type="com.zs.common.entity.IssuesRoomTableEntity">
+	    <id column="issueRoomId"  property="issueRoomId" />
+	    <result column="roomGuid"  property="roomGuid" />
+	    <result column="status"  property="status" />
+	    <result column="type"  property="type" />
+	    <result column="createDate"  property="createDate" />
+	    <result column="endDate"  property="endDate" />
+  	</resultMap>
+  	
+  	<resultMap id="issuesTypeResult" type="com.zs.common.entity.IssuesTypeTableEntity">
+	    <id column="issueCode"  property="issueCode" />
+	    <result column="issueName"  property="issueName" />
+	    <result column="parentCode"  property="parentCode" />
+  	</resultMap>
+  	
+  	<resultMap id="buildingResult" type="com.zs.common.entity.BuildingTableEntity" >
+  		<id column="BldGUID" property="bldGuid"/>
+  		<result column="ProjGUID" property="projGuid"/>
+  		<result column="BldName" property="bldName"/>
+  		<result column="AreaFullName" property="areaFullName"/>
+  	</resultMap>
+  	
+  	<resultMap id="userResult" type="com.zs.rbac.entity.User">
+  		<id column="UserID" property="userID"/>
+  		<result column="UserName" property="username"/>
+  	</resultMap>
+  	
+  	<resultMap id="roomResult" type="com.zs.common.entity.RoomTableEntity">
+  		<id column="RoomGUID" property="roomGuid"/>
+  		<result column="Floor" property="floor"/>
+  		<result column="Room" property="room"/>
+  		<result column="Unit" property="unit"/>
+  		<result column="UnitNo" property="unitNo"/>
+  		<result column="status" property="status"/>
+  	</resultMap>
+  	
+  	<resultMap id="buildUnitResult" type="com.zs.common.entity.BuildUnitTableEntity">
+  		<id column="UnitGUID" property="unitGuid"/>
+  		<result column="BldGUID" property="bldGuid"/>
+  		<result column="Unit" property="unit"/>
+  		<result column="DoorNum" property="doorNum"/>
+  		<result column="RoomNoList" property="roomNoList"/>
+  		<result column="UnitNo" property="unitNo"/>
+  	</resultMap>
+  	
+  	<resultMap id="inspectRoomInfoResult" type="com.zs.common.entity.InspectRoomInfoVo" >
+  		<id column="id"  property="issuesDetail.id" />
+	    <result column="issueRoomId"  property="issuesDetail.issueRoomId" />
+	    <result column="issueCode"  property="issuesDetail.issueCode" />
+	    <result column="position"  property="issuesDetail.position" />
+	    <result column="level"  property="issuesDetail.level" />
+	    <result column="issueDesc"  property="issuesDetail.issueDesc" />
+	    <result column="imgPath"  property="issuesDetail.imgPath" />
+	    <result column="issuesStatus"  property="issuesDetail.status" />
+	    <result column="createDate"  property="issuesDetail.createDate" />
+	    <result column="endDate"  property="issuesDetail.endDate" />
+  		<association property="buildExt" column="buildExt" resultMap="buildingExtResult"/>
+  		<association property="inspectRoom" column="inspectRoom" resultMap="inspectRoomResult"/>
+  		<association property="issueFeedback" column="issueFeedback" resultMap="issueFeedbackResult"/>
+  		<association property="issuesRoom" column="issuesRoom" resultMap="issuesRoomResult"/>
+  		<association property="issuesType" column="issuesType" resultMap="issuesTypeResult"/>
+  		<association property="room" column="room" resultMap="roomResult"/>
+  		<association property="build" column="build" resultMap="buildingResult"/>
+  	</resultMap>
+  	<!--查询问题明细列表  -->
+  	<select id="getIssuesInfoListDao" parameterType="com.zs.common.entity.InspectRoomSearchInfoVo" resultMap="inspectRoomInfoResult">
+  		select * from (select ROW_NUMBER() over (order by e.BldCode,f.unitNo,convert(int,d.Room)) i,a.id,a.status as issuesStatus,e.BldName,d.Unit,d.Room,d.RoomGUID,a.level,a.position,a.issueDesc,b.issueName,a.createDate,g.issueName as parentCode 
+  		from zs_IssuesDetail a LEFT JOIN zs_IssuesType b on a.issueCode = b.issueCode 
+		LEFT JOIN zs_IssuesRoom c on a.issueRoomId = c.issueRoomId LEFT JOIN p_Room d on c.roomGuid = d.RoomGUID LEFT JOIN p_Building e 
+		on d.BldGUID = e.BldGUID LEFT JOIN p_BuildUnit f on d.BldGUID=f.BldGUID and f.Unit = d.Unit LEFT JOIN zs_IssuesType g on g.issueCode = b.parentCode where 1=1
+		<if test="projGuid!=null and ''!=projGuid">
+			and convert(VARCHAR(50),d.projGuid) = #{projGuid}
+		</if>
+		<if test="bldGuid!=null and ''!=bldGuid">
+			and convert(VARCHAR(50),d.bldGuid) = #{bldGuid}
+		</if>
+		<if test="unitGuid!=null and ''!=unitGuid">
+			and convert(VARCHAR(50),f.unitGuid) = #{unitGuid}
+		</if>
+		<if test="roomGuid!=null and ''!=roomGuid">
+			and convert(VARCHAR(50),c.roomGuid) = #{roomGuid}
+		</if>
+		<if test="issuesId!=null and ''!=issuesId">
+			and a.id = #{issuesId}
+		</if>
+		<if test="status!=null and ''!=status">
+			and a.status = #{status}
+		</if>
+		<if test="mainType!=null and ''!=mainType">
+			and b.parentCode = #{mainType}
+		</if>
+		) temp where 1=1
+		<if test="length!=null and ''!=length">
+			and temp.i > ${startIndex} and temp.i &lt;= ${startIndex}+${length}
+		</if>
+  	</select>
+  	<!--查询问题类型列表  -->
+  	<select id="getIssuesTypeListDao" parameterType="String" resultMap="issuesTypeResult">
+  		select * from zs_IssuesType where parentCode = #{type}
+  	</select>
+  	<!--查询楼栋信息列表  -->
+  	<resultMap id="inspectBldInfoResult" type="com.zs.common.entity.InspectRoomInfoVo">
+  		<id column="bldGuid" property="buildExt.bldGuid"/>
+  		<result column="bldCheckStatus" property="buildExt.bldCheckStatus"/>
+  		<association property="build" column="build" resultMap="buildingResult"/>
+  	</resultMap>
+  	<select id="getBldInfoListDao" parameterType="com.zs.common.entity.InspectRoomSearchInfoVo" resultMap="inspectBldInfoResult">
+  		select a.bldGuid,a.bldCheckStatus,b.BldName,b.ProjGUID from zs_BuildingExt a left join p_Building b on a.bldGuid = b.BldGUID  where 1=1
+  		<if test="bldGuid!=null and ''!=bldGuid">
+  			and a.bldGuid = #{bldGuid}
+  		</if>
+  		<if test="projGuid!=null and ''!=projGuid">
+  			and b.ProjGUID = #{projGuid}
+  		</if>
+  		<if test="bldCheckStatus!=null and ''!=bldCheckStatus">
+  			and a.bldCheckStatus = #{bldCheckStatus}
+  		</if>
+  		order by b.BldCode
+  	</select>
+  	<!--查询楼栋下单元及房间信息  -->
+  	<resultMap id="bldUnitInfoResult" type="com.zs.common.entity.BldUnitInfoVo">
+  		<id column="Unit" property="unit"/>
+  		<result column="DoorNum" property="doorNum"/>
+  		<collection property="roomList" resultMap="roomResult"/>
+  	</resultMap>
+  	<select id="getBldUnitInfoListDao" parameterType="com.zs.common.entity.InspectRoomSearchInfoVo" resultMap="bldUnitInfoResult">
+  		select a.RoomGUID,a.Unit,a.UnitNo,a.Floor,a.Room,b.DoorNum,case when c.status is null then 0 else c.status end as status from p_Room a LEFT JOIN p_BuildUnit b on a.BldGUID = b.BldGUID and a.Unit=b.Unit 
+  		LEFT JOIN zs_IssuesRoom c ON a.RoomGUID = c.roomGuid
+  		where <!-- a.ProjGUID = #{projGuid} and --> a.BldGUID = #{bldGuid}  
+  		<if test="type== 1">
+  			order by a.UnitNo,convert(int,a.Floor) desc,a.Room
+  		</if>
+  		<if test="type== 2">
+  			order by a.No
+  		</if>
+  	</select>
+  	<!-- 查询问题反馈详情 -->
+  	<resultMap id="feedbackInfoResult" type="com.zs.common.entity.InspectRoomInfoVo">
+  		<id column="id"  property="issueFeedback.id" />
+	    <result column="issuesId"  property="issueFeedback.issuesId" />
+	    <result column="backContent"  property="issueFeedback.backContent" />
+	    <result column="createDate"  property="issueFeedback.createDate" />
+	    <result column="repairMan"  property="issueFeedback.repairMan" />
+	    <result column="operId"  property="issueFeedback.operId" />
+	    <result column="fbType"  property="issueFeedback.fbType" />
+  		<association property="user" column="user" resultMap="userResult"/>
+  	</resultMap>
+  	<select id="getIssueFeedbackListDao" parameterType="com.zs.common.entity.InspectRoomSearchInfoVo" resultMap="feedbackInfoResult">
+  		select * from(select ROW_NUMBER() over(order by a.createDate) i,a.*,b.UserName from zs_IssueFeedback a left join zs_rbac_user b on a.operId = b.UserID where a.issuesId = #{issuesId}) c 
+  		where 1 = 1
+  		<if test="length!=null and ''!=length">
+  			and c.i > ${startIndex} and c.i &lt;= ${startIndex}+${length}
+  		</if>
+  	</select>
+  	<!-- 批量插入问题详情 -->
+  	<insert id="insertIssueDetailListDao" parameterType="java.util.List">
+  		insert into zs_IssuesDetail (issueRoomId,issueCode,position,level,issueDesc,imgPath,status,createDate,endDate) values 
+  		<foreach collection="list" item="item" index="index" separator=",">
+  			(#{item.issueRoomId},#{item.issueCode},#{item.position},#{item.level},#{item.issueDesc},#{item.imgPath},#{item.status},#{item.createDate},#{item.endDate})
+  		</foreach>
+  	</insert>
+  	<!-- 插入验房问题表 -->
+  	<!-- useGeneratedKeys="true" keyProperty="issueRoomId" -->
+  	<select id="getIssuesRoomIdDao"  parameterType="com.zs.common.entity.IssuesRoomTableEntity" resultType="int">
+  		IF NOT EXISTS(SELECT 1 FROM zs_IssuesRoom WHERE roomGuid=#{roomGuid} )
+  		BEGIN
+  			insert into zs_IssuesRoom (roomGuid,status,type,createDate,endDate) values (#{roomGuid},#{status},#{type},#{createDate},#{endDate})
+  		END
+  			select issueRoomId from zs_IssuesRoom where roomGuid = #{roomGuid}
+  	</select>
+  	<!--插入验房信息表 -->
+  	<insert id="insertInspectRoomDao" parameterType="com.zs.common.entity.InspectRoomTableEntity">
+  		IF NOT EXISTS(select 1 from zs_InspectRoom where roomGuid=#{roomGuid})
+  		BEGIN
+  			insert into zs_InspectRoom( bldGuid,roomGuid,projGuid,checkStatus,roomStatus,repairTimes,createDate,endDate)
+  			values (#{bldGuid},#{roomGuid},#{projGuid},#{checkStatus},#{roomStatus},#{repairTimes},#{createDate},#{endDate})
+  		END
+  	</insert>
+  	<!--插入楼栋可验信息  -->
+  	<insert id="insertBuildingExtDao" parameterType="com.zs.common.entity.BuildingExtTableEntity">
+  		insert into zs_BuildingExt (bldGuid,bldCheckStatus) values (#{bldGuid},#{bldCheckStatus})
+  	</insert>
+  	<!--根据楼栋id查询对应楼栋下的单元信息  -->
+  	<select id="getUnitInfoByBldDao" parameterType="String" resultMap="buildUnitResult">
+  		select * from p_BuildUnit where BldGUID = #{bldGuid} order by UnitNo
+  	</select>
+  	<!--插入问题反馈信息  -->
+  	<insert id="insertIssueFeedbackDao" parameterType="com.zs.common.entity.IssueFeedbackTableEntity">
+  		insert into zs_IssueFeedback (issuesId,backContent,createDate,repairMan,operId,fbType) 
+  		values(#{issuesId},#{backContent},#{createDate},#{repairMan},#{operId},#{fbType})
+  	</insert>
+  	<!--根据id获取问题详情  -->
+  	<select id="getIssuesDetailByIdDao" parameterType="com.zs.common.entity.IssuesDetailTableEntity" resultMap="issuesDetailResult">
+  		select * from zs_IssuesDetail where 1=1
+  		<if test="id!=null and ''!=id">
+  			and id = #{id}
+  		</if>
+  		<if test="issueRoomId!=null and ''!=issueRoomId">
+  			and issueRoomId = #{issueRoomId}
+  		</if>
+  		<if test="issueCode!=null and ''!=issueCode">
+  			and issueCode = #{issueCode}
+  		</if>
+  	</select>
+  	<!-- 根据id更新问题状态 -->
+  	<update id="updateIssuesStatusByIdDao" parameterType="com.zs.common.entity.IssuesDetailTableEntity">
+  		update zs_IssuesDetail set status = #{status}
+  		<if test="endDate!=null and ''!=endDate">
+  			,endDate = #{endDate}
+  		</if>
+  		where id = #{id}
+  	</update>
+  	<!--根据id更新问题详情  -->
+  	<update id="updateIssuesDetailByIdDao" parameterType="com.zs.common.entity.IssuesDetailTableEntity">
+  		update zs_IssuesDetail set issueCode = #{issueCode},position=#{position},level=#{level},issueDesc=#{issueDesc} where id = #{id}
+  	</update>
+  	<!--根据id删除问题详情 -->
+  	<delete id="deleteIssuesDetailByIdDao" parameterType="int">
+  		delete from zs_IssuesDetail where id = #{id}
+  	</delete>
+  	<!--根据id删除问题房间信息，在该房间下所有问题删除完后删除  -->
+  	<delete id="deleteIssuesRoomByIdDao" parameterType="int">
+  		delete from zs_IssuesRoom where issueRoomId = #{id}
+  	</delete>
+  	<!--根据id删除验房信息，暂时没用  -->
+  	<delete id="deleteInspectRoomByIdDao" parameterType="String">
+  		delete from zs_InspectRoom where roomGuid = #{roomGuid}
+  	</delete>
+  	<!--根据id获取问题房间信息  -->
+  	<select id="getIssuesRoomByIdDao" parameterType="int" resultType="com.zs.common.entity.IssuesRoomTableEntity">
+  		select * from zs_IssuesRoom where issueRoomId = #{id}
+  	</select>
+  	<!--更新问题房间表，在该房间下所有问题都解决时更新  -->
+  	<update id="updateIssuesRoomByIdDao" parameterType="com.zs.common.entity.IssuesRoomTableEntity">
+  		update zs_IssuesRoom set status = #{status},endDate = #{endDate} where issueRoomId = #{issueRoomId}
+  	</update>
+  	<!--获取物业专员列表  -->
+  	<select id="getEmployeeListDao" resultType="String">
+  		select a.UserName from zs_rbac_user a LEFT JOIN zs_rbac_user_role b on a.UserID=b.UserID LEFT JOIN zs_rbac_role c ON b.RoleID = c.RoleID
+		where c.RoleName='物业专员'
+  	</select>
+  	<!--插入问题类型  -->
+  	<insert id="insertIssuesTypeDao" parameterType="com.zs.common.entity.IssuesTypeTableEntity">
+  		insert into zs_IssuesType (issueName,parentCode) values (#{issueName},#{parentCode})
+  	</insert>
+  	<!--删除问题类型  -->
+  	<delete id="deleteIssuesTypeByIdDao" parameterType="int">
+  		delete from zs_IssuesType where issueCode = #{issueCode}  or parentCode = #{issueCode}
+  	</delete>
+  	<!--查询当前项目下的所有楼栋及楼栋状态等信息  -->
+  	<select id="getAllBldInfoListByIdDao" parameterType="String" resultMap="inspectBldInfoResult">
+  		select a.BldName,a.BldGUID,b.bldCheckStatus,a.AreaFullName from p_Building a LEFT JOIN zs_BuildingExt b on a.BldGUID = b.bldGuid
+		where a.ProjGUID = #{projGuid} and a.IsBld=1 order by a.AreaFullName,a.OrderCode
+  	</select>
+  	<!--根据主类型获取其下的所有问题子类型  -->
+  	<select id="getAllIssusTypeListDao" parameterType="com.zs.common.entity.InspectRoomSearchInfoVo" resultMap="issuesTypeResult">
+  		select * into #temp from (select a.issueCode,a.IssueName,b.issueName as parentCode from zs_IssuesType a left JOIN zs_IssuesType b on a.parentCode = b.issueCode
+  		where 1=1
+  		<if test="mainType!=null and ''!=mainType">
+  			and a.parentCode=#{mainType}
+  		</if>
+  		) a
+		<if test="length==null or ''==length">
+			select * from #temp
+		</if>
+		<if test="length!=null and ''!=length">
+			select top ${length} * from #temp where issueCode not in (select top ${startIndex} issueCode from #temp order by issueCode)order by issueCode
+		</if> 
+  	</select>
+  	<!--根据id更新问题类型  -->
+  	<update id="updateIssuesTypeByIdDao" parameterType="com.zs.common.entity.IssuesTypeTableEntity">
+  		update zs_IssuesType set issueName = #{issueName} where issueCode = #{issueCode}
+  	</update>
+ </mapper>

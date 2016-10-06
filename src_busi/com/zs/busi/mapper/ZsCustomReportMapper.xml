@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper  namespace="com.zs.busi.dao.ZsCustomReportDao">
+	 <select id="getCustomCountByDateAndWayDao" parameterType="com.zs.busi.entity.ZsCustomReportSearchVo" resultType="Integer">
+		select count(*) from dbo.zs_客户 a,dbo.zs_rbac_user b,dbo.zs_客户跟进记录  c,dbo.zs_客户意向条件 d,dbo.zs_teamgroup e,dbo.zs_user_teamgroup f
+	 	where a.客户id = c.客户id and a.客户id = d.客户id <!-- and c.跟进人id = d.接待人id --> and c.跟进人id=b.UserId and b.UserId= f.UserId and f.teamGroupId = e.id
+		<if test="projGuid!=null and ''!=projGuid">
+			and d.项目id = #{projGuid}
+		</if>
+		<if test="startTime!=null and ''!=startTime">
+			and c.跟进日期  &gt;= #{startTime}
+			<if test="gjfs!= '去电'">
+				<if test="first!=null and ''!=first">
+					and a.创建日期  &gt;= #{startTime}
+				</if>
+			</if>
+		</if>
+		<if test="endTime!=null and ''!=endTime">
+			<if test="gjfs!= '去电'">
+				<if test="first!=null and ''!=first">
+					and a.创建日期  &lt;= #{endTime}
+				</if>
+			</if>
+			and c.跟进日期 &lt;= #{endTime}
+		</if>
+		<if test="gjfs!=null and ''!=gjfs">
+			and c.跟进方式 = #{gjfs}
+		</if>
+		<if test="userId!=null and ''!=userId">
+			and b.UserId = #{userId}
+		</if>
+		<if test="cstName!=null and ''!=cstName">
+			and a.客户名称  like '%${cstName}%'
+		</if>
+		<if test="mobileTel!=null and ''!=mobileTel">
+			and a.联系电话  like '%${mobileTel}%'
+		</if>
+	 </select>
+	 <select id="getCustomInfoByDateAndWayDao" parameterType="com.zs.busi.entity.ZsCustomReportSearchVo" resultType="com.zs.busi.entity.ZsCustomReportEntity">
+	 	select c.id as id,a.客户名称 as cstName,a.联系电话 as mobileTel,a.初次到访方式 as oppSource,a.户口所在地 as homeArea,b.UserName as zygw,e.groupName as team,a.客户状态 as status,a.最近跟进日期 as lastDate,c.跟进方式 as gjfs
+	 	into #cstAnalysis from dbo.zs_客户 a,dbo.zs_rbac_user b,dbo.zs_客户跟进记录  c,dbo.zs_客户意向条件 d,dbo.zs_teamgroup e,dbo.zs_user_teamgroup f
+	 	where a.客户id = c.客户id and a.客户id = d.客户id <!-- and c.跟进人id = d.接待人id --> and c.跟进人id=b.UserId and b.UserId= f.UserId and f.teamGroupId = e.id
+	 	<if test="projGuid!=null and ''!=projGuid">
+			and d.项目id = #{projGuid}
+		</if>
+		<if test="startTime!=null and ''!=startTime">
+			and c.跟进日期  &gt;= #{startTime}
+			<if test="gjfs!= '去电'">
+				<if test="first!=null and ''!=first">
+					and a.创建日期  &gt;= #{startTime}
+				</if>
+			</if>
+		</if>
+		<if test="endTime!=null and ''!=endTime">
+			<if test="gjfs!= '去电'">
+				<if test="first!=null and ''!=first">
+					and a.创建日期  &lt;= #{endTime}
+				</if>
+			</if>
+			and c.跟进日期 &lt;= #{endTime}
+		</if>
+		<if test="gjfs!=null and ''!=gjfs">
+			and c.跟进方式 = #{gjfs}
+		</if>
+		<if test="userId!=null and ''!=userId">
+			and b.UserId = #{userId}
+		</if>
+		<if test="cstName!=null and ''!=cstName">
+			and a.客户名称  like '%${cstName}%'
+		</if>	
+		<if test="mobileTel!=null and ''!=mobileTel">
+			and a.联系电话  like '%${mobileTel}%'
+		</if>
+	 	order by c.跟进日期 desc
+	 	
+	 	select top ${length} * from #cstAnalysis where id not in (select top ${startIndex} id from #cstAnalysis)
+	 </select>
+ </mapper>

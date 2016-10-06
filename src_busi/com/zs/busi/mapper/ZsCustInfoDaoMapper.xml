@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper  namespace="com.zs.busi.dao.ZsfollowInfoDao">
+	 <select id="getZsCustInfoDao" resultType="com.zs.busi.entity.ZsInfoVo" parameterType="com.zs.busi.entity.ZsFollowInfoVo">	
+		select a.客户id as cusId,a.客户名称 as cusName,a.联系电话 as tel,b.userName as employeeName,c.跟进日期 as followDate,c.跟进方式 as followWay,c.跟进内容 as followInfo,c.id as followId into #followTemp from dbo.zs_客户 a,dbo.zs_rbac_user_ext b,dbo.zs_客户跟进记录 c,
+		dbo.zs_客户意向条件 d where a.客户id=d.客户id and a.客户id=c.客户id and b.userId=c.跟进人id
+		<if test="progGuid!=null and ''!=progGuid">
+			and d.项目id=#{progGuid}
+		</if>
+		<if test="cusName!=null and ''!=cusName">
+			and a.客户名称 like '%${cusName}%'
+		</if>
+		<if test="tel!=null and ''!=tel">
+			and a.联系电话 like '%${tel}%'
+		</if>
+		<if test="employeeName!=null and ''!=employeeName">
+			and b.userName = #{employeeName}
+		</if>
+		<if test="employeeId!=null and ''!=employeeId">
+			and b.userId = #{employeeId}
+		</if>
+		<if test="startTime!=null and ''!=startTime">
+			and c.跟进日期  &gt; #{startTime}
+		</if>
+		<if test="endTime!=null and ''!=endTime">
+			and c.跟进日期  &lt; #{endTime}
+		</if>
+		<if test="cusId!=null and ''!=cusId">
+			and a.客户id= #{cusId}
+		</if> 
+		
+		<if test="length !=0">
+			select top ${length} * from #followTemp where followId not in(select top ${startIndex} followId from #followTemp
+			<if test="sortName == '跟进日期'">
+				order by followDate ${sortDir},cusId
+			</if>
+			<if test="sortName=='客户名称' or sortName=='联系电话'">
+				order by a.${sortName} ${sortDir}
+			</if>
+			)
+			<if test="sortName == '跟进日期'">
+				order by followDate ${sortDir},cusId
+			</if>
+			<if test="sortName=='客户名称' or sortName=='联系电话'">
+				order by a.${sortName} ${sortDir}
+			</if>
+		</if>
+		<if test="length ==0">
+			select  * from #followTemp
+		</if>
+		drop table #followTemp 
+	 </select>
+	 
+	 <select id="getZsCustCountDao" resultType="Integer" parameterType="com.zs.busi.entity.ZsFollowInfoVo">
+	 	<!-- select count(a.客户id) from dbo.zs_客户 a,dbo.zs_客户意向条件 b,dbo.zs_rbac_user_ext c
+	 	where a.客户id = b.客户id and b.接待人id= c.value
+	 		<if test="employeeName!=null and ''!=employeeName">
+	 			and c.userName=#{employeeName}
+	 		</if>
+	 		<if test="employeeId!=null and ''!=employeeId">
+				and b.接待人id = #{employeeId}
+			</if>
+	 		<if test="cusName!=null and ''!=cusName">
+	 			and a.客户名称 like '%${cusName}%'
+	 		</if>
+	 		<if test="tel!=null and ''!=tel">
+	 			and a.联系电话 like '%${tel}%'
+	 		</if>
+	 		<if test="proName!=null and ''!=proName">
+			</if> -->
+		select count(a.客户id) from dbo.zs_客户 a,dbo.zs_rbac_user_ext b,dbo.zs_客户跟进记录 c,
+		dbo.zs_客户意向条件 d where a.客户id=d.客户id and a.客户id=c.客户id and b.userId=c.跟进人id
+		<if test="progGuid!=null and ''!=progGuid">
+			and d.项目id=#{progGuid}
+		</if>
+		<if test="cusName!=null and ''!=cusName">
+			and a.客户名称 like '%${cusName}%'
+		</if>
+		<if test="tel!=null and ''!=tel">
+			and a.联系电话 like '%${tel}%'
+		</if>
+		<if test="employeeName!=null and ''!=employeeName">
+			and b.userName = #{employeeName}
+		</if>
+		<if test="employeeId!=null and ''!=employeeId">
+			and b.userId = #{employeeId}
+		</if>
+		<if test="startTime!=null and ''!=startTime">
+			and c.跟进日期  &gt; #{startTime}
+		</if>
+		<if test="endTime!=null and ''!=endTime">
+			and c.跟进日期  &lt; #{endTime}
+		</if>
+<!-- 		<if test="sortName == '跟进日期'">
+			order by c.跟进日期 ${sortDir},a.客户id
+		</if>
+		<if test="sortName=='客户名称' or sortName=='联系电话'">
+			order by a.${sortName} ${sortDir}
+		</if> -->
+	 </select>
+	 
+	 <select id="getZsFollowInfoCountDaoByCusid" parameterType="com.zs.busi.entity.ZsFollowInfoVo" resultType="Integer">
+	 	select count(*) from dbo.zs_客户跟进记录  a
+	 	<if test="employeeName!=null and ''!=employeeName">
+	 		,zs_rbac_user_ext b where a.客户id = #{cusId} and a.跟进人id=b.value and b.userName=#{employeeName}
+	 		<if test="employeeId!=null and ''!=employeeId">
+	 			and a.跟进人id = #{employeeId}
+	 		</if>
+	 		<if test="startTime!=null and ''!=startTime">
+	 			and a.跟进日期 &gt; #{startTime}
+	 		</if>
+		 	<if test="endTime!=null and ''!=endTime">
+		 		and a.跟进日期 &lt; #{endTime}
+		 	</if>
+	 	</if>
+	 	<if test="employeeName==null or ''!=employeeName">
+	 		where a.客户id = #{cusId}
+	 		<if test="employeeId!=null and ''!=employeeId">
+	 			and a.跟进人id = #{employeeId}
+	 		</if>
+	 		<if test="startTime!=null and ''!=startTime">
+	 			and a.跟进日期 &gt; #{startTime}
+	 		</if>
+		 	<if test="endTime!=null and ''!=endTime">
+		 		and a.跟进日期 &lt; #{endTime}
+		 	</if>
+	 	</if>
+	 </select>
+	 
+	 <select id="getZsFollowInfoDaoByCusid" resultType="com.zs.busi.entity.ZsInfoVo" parameterType="com.zs.busi.entity.ZsFollowInfoVo">
+	 	select a.id,a.跟进日期 as followDate,a.跟进方式 as followWayEach,a.跟进内容 as followInfo,b.userName as employeeName into #followTemp from dbo.zs_客户跟进记录 a,dbo.zs_rbac_user_ext b where a.客户id=#{cusId} and a.跟进人id=b.value
+	 	<if test="employeeName !=null and ''!=employeeName">
+	 		and b.userName=#{employeeName}
+	 	</if>
+	 	<if test="employeeId !=null and ''!=employeeId">
+	 		and b.value = #{employeeId}
+	 	</if>
+	 	<if test="endTime!=null and ''!=endTime">
+	 		and a.跟进日期  &lt; #{endTime}
+	 	</if>
+	 	<if test="startTime!=null and ''!=startTime">
+	 		and a.跟进日期  &gt; #{startTime}
+	 	</if>
+	 		order by a.跟进日期 desc,a.id
+	 	
+	 	select * from #followTemp where id in (select top ${length} id from #followTemp where id not in(select top ${startIndex} id from #followTemp) )
+	 	
+	 	drop table #followTemp
+	 </select>
+	 
+	 <select id="getCusInfo" resultType="com.zs.busi.entity.ZsCustomTableVo" parameterType="string">
+	 	select 客户id as cusId,联系电话 as tel from dbo.客户 where 客户名称=#{param1}
+	 </select>
+ </mapper>

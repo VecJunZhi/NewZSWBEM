@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="com.zs.crm.dao.XsInfoDao" >
+ 	<select id="getCountTelAccess"   resultType="com.zs.busi.entity.CountTelAccessVo">
+	 	select SUM(新客户来电)+SUM(老客户来电)AS cusTel,SUM(新客户接访)+SUM(老客户接访) as cusAccess,SUM(回电)as toTel,SUM(回访)AS toInterView from (
+		select u.[group],s.Zygw,
+		SUM(CASE WHEN opp.Gjfs = '客户来电' AND CONVERT(varchar, p.CreatedOn , 101) = CONVERT(varchar, GjDate , 101) THEN 1 ELSE 0 END) AS '新客户来电',
+			SUM(CASE WHEN opp.Gjfs = '客户来电' AND CONVERT(varchar, p.CreatedOn , 101) &lt; CONVERT(varchar, GjDate , 101) THEN 1 ELSE 0 END) AS '老客户来电',
+			SUM(CASE WHEN opp.Gjfs = '现场接待' AND CONVERT(varchar, p.CreatedOn , 101) = CONVERT(varchar, GjDate , 101) THEN 1 ELSE 0 END) AS '新客户接访',
+			SUM(CASE WHEN opp.Gjfs = '现场接待' AND CONVERT(varchar, p.CreatedOn , 101) &lt; CONVERT(varchar, GjDate , 101) THEN 1 ELSE 0 END) AS '老客户接访',
+			SUM(CASE WHEN opp.Gjfs = '主动电访' THEN 1 ELSE 0 END) AS '回电',
+			SUM(CASE WHEN opp.Gjfs = '上门拜访' THEN 1 ELSE 0 END) AS '回访'
+		from s_Opp2Gjjl opp
+		LEFT JOIN s_Opportunity s ON s.OppGUID=opp.OppGUID
+		LEFT JOIN p_Customer p ON p.CstGUID=s.CstGUID
+		LEFT JOIN u_Group u ON u.zGUID=s.UserGUID
+		WHERE CONVERT(varchar(100), GjDate, 23) between #{0} and #{1}
+		GROUP BY u.[group],s.Zygw)aa
+ 	</select>
+ 	<select id="getCountRoom"   resultType="com.zs.busi.entity.CountRoomVo">
+		 <!-- set @var_ProjGuid=(select  convert(uniqueidentifier,@var_ProjGuid)) -->
+		select SUM(住宅成交)AS roomDeal ,sum(商铺成交)AS shopDeal,sum(地下室成交)AS cellarDeal ,SUM(车位成交)AS carDeal,SUM(住宅退房)AS roomCheckOut,SUM(商铺退房)AS shopCheckOut,SUM(地下室退房)AS cellarCheckOut,SUM(车位退房)AS carCheckOut,SUM(住宅换房)AS roomChange,SUM(商铺换房)AS shopChange,SUM(地下室换房)AS cellarChange,SUM(车位换房)AS carChange from (
+		SELECT Ywy ,
+			SUM(CASE WHEN  (BB.TradeStatus = '激活' OR BB.CloseReason = '退房') AND BB.QSDate &gt;= #{0} AND BB.QSDate &lt;= #{1} AND BB.ProductType LIKE '%住宅%' THEN 1 ELSE 0 END)AS '住宅成交',
+			SUM(CASE WHEN  (BB.TradeStatus = '激活' OR BB.CloseReason = '退房') AND BB.QSDate &gt;= #{0} AND BB.QSDate &lt;= #{1} AND BB.ProductType LIKE '%商铺%' THEN 1 ELSE 0 END)AS '商铺成交',
+			SUM(CASE WHEN  (BB.TradeStatus = '激活' OR BB.CloseReason = '退房') AND BB.QSDate &gt;= #{0} AND BB.QSDate &lt;= #{1} AND BB.ProductType LIKE '%地下室%' THEN 1 ELSE 0 END)AS '地下室成交',
+			SUM(CASE WHEN  (BB.TradeStatus = '激活' OR BB.CloseReason = '退房') AND BB.QSDate &gt;= #{0} AND BB.QSDate &lt;= #{1} AND BB.ProductType LIKE '%车位%' THEN 1 ELSE 0 END)AS '车位成交',
+			SUM(CASE WHEN BB.CloseReason IN ('退房') AND BB.CloseDate  &gt;= #{0} AND BB.CloseDate  &lt;= #{1} AND BB.ProductType LIKE '%住宅%'THEN 1 ELSE 0 END)AS '住宅退房',
+			SUM(CASE WHEN BB.CloseReason IN ('退房') AND BB.CloseDate  &gt;= #{0} AND BB.CloseDate  &lt;= #{1} AND BB.ProductType LIKE '%商铺%'THEN 1 ELSE 0 END)AS '商铺退房',
+			SUM(CASE WHEN BB.CloseReason IN ('退房') AND BB.CloseDate  &gt;= #{0} AND BB.CloseDate  &lt;= #{1} AND BB.ProductType LIKE '%地下室%'THEN 1 ELSE 0 END)AS '地下室退房',
+			SUM(CASE WHEN BB.CloseReason IN ('退房') AND BB.CloseDate  &gt;= #{0} AND BB.CloseDate  &lt;= #{1} AND BB.ProductType LIKE '%车位%'THEN 1 ELSE 0 END)AS '车位退房',
+			SUM(CASE WHEN BB.CloseReason IN ('换房') AND BB.CloseDate  &gt;= #{0} AND BB.CloseDate  &lt;= #{1} AND BB.ProductType LIKE '%住宅%' THEN 1 ELSE 0 END)AS '住宅换房',
+			SUM(CASE WHEN BB.CloseReason IN ('换房') AND BB.CloseDate  &gt;= #{0} AND BB.CloseDate  &lt;= #{1} AND BB.ProductType LIKE '%商铺%' THEN 1 ELSE 0 END)AS '商铺换房',
+			SUM(CASE WHEN BB.CloseReason IN ('换房') AND BB.CloseDate  &gt;= #{0} AND BB.CloseDate  &lt;= #{1} AND BB.ProductType LIKE '%地下室%' THEN 1 ELSE 0 END)AS '地下室换房',
+			SUM(CASE WHEN BB.CloseReason IN ('换房') AND BB.CloseDate  &gt;= #{0} AND BB.CloseDate  &lt;= #{1} AND BB.ProductType LIKE '%车位%' THEN 1 ELSE 0 END)AS '车位换房'
+		FROM(
+		SELECT 
+		(CASE WHEN A.Ywy = null OR A.Ywy = ' ' THEN B.Ywy ELSE A.Ywy END)Ywy,
+		(CASE WHEN A.QSDate = null OR A.QSDate = ' ' THEN B.QSDate  ELSE A.QSDate  END)QSDate,
+		(CASE WHEN  A.CloseReason IN ('退房','换房') THEN A.CloseDate  ELSE B.CloseDate  END)CloseDate,
+		RoomStatus ,TradeStatus ,s_trade .CloseReason  ,ProductType ,s_trade.ProjGUID 
+		FROM  s_Trade 
+		LEFT JOIN es_Order A ON A.OrderGUID  = s_Trade .RGOrderGUID 
+		LEFT JOIN es_Contract  B ON B.ContractGUID  = s_Trade .ContractGUID
+		LEFT JOIN rptvs_Room room ON room.RoomGUID = s_Trade.RoomGUID
+		
+		) BB
+		WHERE BB .ProjGUID IN (#{2})
+			
+		GROUP BY Ywy 
+		 )aa
+ 	</select>
+ 	<select id="getMonthCountMoneyTnumber"   resultType="com.zs.busi.entity.XsMonthCountInfoVo">
+		select count(s_Order.RoomGUID) AS 'totalNumber', 
+		sum(s_Order.Total) AS 'totalMoney' 
+		from s_Order 
+		LEFT JOIN p_Room p ON p.RoomGUID=s_Order.RoomGUID 
+		where QSDate between (SELECT DATEADD(MM, DATEDIFF(MM,0,getdate()), 0) )and GETDATE() 
+		and s_Order.Status='激活' 
+		and p.Roominfo like '%楼%' 
+		and HuXing &lt;&gt;'地下室'
+ 	</select>
+ 	<!-- 获得crm上所有用户的列表信息 -->
+ 	<select id="getUsersFromXsCRM" parameterType="com.zs.crm.web.vo.XsTeamGroupVo" resultType="com.zs.crm.entity.XsTeamGroupEntity">
+ 		SELECT userGUID,userName FROM dbo.e_myUser
+ 		<where>
+ 			1=1
+ 			<if test="userName != null and '' != userName">
+ 			 and userName like '%${userName}%'
+ 			</if>
+ 		</where>
+ 	</select>
+ </mapper>

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="GBK"?>
+<!-- The contents of this file will be loaded for each web application --><Context>
+
+    <!-- Default set of monitored resources -->
+    <WatchedResource>WEB-INF/web.xml</WatchedResource>
+	
+    <!-- Uncomment this to disable session persistence across Tomcat restarts -->
+    <!--
+    <Manager pathname="" />
+    -->
+
+    <!-- Uncomment this to enable Comet connection tacking (provides events
+         on session expiration as well as webapp lifecycle) -->
+    <!--
+    <Valve className="org.apache.catalina.valves.CometConnectionManagerValve" />        
+    -->
+  <!-- 	sqlServer 云客数据库配置 -->
+<!--    <Resource
+            name="jdbc/sqlServer"
+            driverClassName="com.microsoft.sqlserver.jdbc.SQLServerDriver"
+            maxActive="200"
+            maxIdle="200"
+            maxWait="10000"
+            username="sa"
+            password="Zs2015"
+            type="javax.sql.DataSource"
+            url="jdbc:sqlserver://192.168.1.23:1433;database=DOTNET_ERP306;" /> -->
+		
+    <!-- 	sqlserver2000    招商系统数据库配置 本地 -->
+
+	    <!--  <Resource
+			name="jdbc/sqlServer2000"
+            driverClassName="com.microsoft.sqlserver.jdbc.SQLServerDriver"
+            maxActive="100"
+            maxIdle="100"
+            maxWait="4000"            
+            username="sa"
+            password="Zs2015"
+            type="javax.sql.DataSource"
+            url="jdbc:sqlserver://192.168.1.21:1433;database=sl_zszs;" 
+            removeAbandoned="true"
+            removeAbandonedTimeout="80"
+            logAbandoned="true"/>  -->
+      <!-- 	mysql 数据库配置 24 -->       
+	<!-- <Resource
+            name="jdbc/Mysql"
+            driverClassName="com.mysql.jdbc.Driver"
+            maxActive="100"
+            maxIdle="100"
+            maxWait="600"            
+            username="root"
+            password="myoa888"
+            type="javax.sql.DataSource"
+            url="jdbc:mysql://oa.zgzsdc.com:3336/TD_OA" />  -->
+      <!-- 权限分配数据库 192.168.1.23 -->   
+     <Resource
+            name="jdbc/Mysqlzswbem"
+            driverClassName="com.microsoft.sqlserver.jdbc.SQLServerDriver"
+            maxActive="100"
+            maxIdle="100"
+            maxWait="600"            
+            username="sa"
+            password="Zs2015"
+            type="javax.sql.DataSource"
+            url="jdbc:sqlserver://192.168.1.23:1433;database=dotnet_erp306;" /> 
+      <!-- 	mysql 数据库配置 197 -->       
+	<Resource
+            name="jdbc/Mysql"
+            driverClassName="com.mysql.jdbc.Driver"
+            maxActive="100"
+            maxIdle="100"
+            maxWait="6000"            
+            username="oa"
+            password="myoa888"
+            type="javax.sql.DataSource"
+            url="jdbc:mysql://192.168.1.197:3336/TD_OA"/>
+</Context>

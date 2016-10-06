@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="com.zs.rbac.dao.RoleDao">
+ 	<sql id="paging">
+ 		<!-- 不分页 -->
+		<if test="rows ==null or ''== rows"> 
+			SELECT * FROM #tmp_table  
+		</if>
+		<!-- 分页 -->
+		<if test="rows !=null and ''!= rows">
+			select top ${rows} * from #tmp_table where serialNum &gt;${startLength}
+		</if>
+ 	</sql>
+ 	<select id="getRoles" parameterType="com.zs.rbac.entity.Role" resultType="com.zs.rbac.entity.Role">
+	 	SELECT
+	 	roleID,
+		roleName,
+		available,
+		priority,
+		createTime,
+		lastTime,
+		description,
+		orgid,
+		projGuid,
+		row_number() over(order by RoleID desc) as serialNum
+		into #tmp_table
+		FROM
+			[dbo].[zs_rbac_role]
+		<where>
+			1=1
+			<if test="roleName !=null and ''!= roleName">
+ 				and roleName=#{roleName}
+ 			</if>
+ 			<if test="available !=null and ''!= available">
+ 				and available=#{available}
+ 			</if>
+ 			<if test="createTime  !=null and ''!= createTime">
+ 				and createTime=#{createTime}
+ 			</if>
+ 			<if test="lastTime !=null and ''!= lastTime">
+ 				and lastTime=#{lastTime}
+ 			</if>
+ 			<if test="description !=null and ''!= description">
+ 				and description=#{description}
+ 			</if>
+ 			<if test="orgid  !=null and ''!= orgid">
+ 				and orgid=#{orgid}
+ 			</if>
+ 			<if test="roleID !=null and ''!= roleID">
+ 				and roleID=#{roleID}
+ 			</if>
+		</where>
+		<include refid="paging" />
+		ORDER BY roleID desc
+		DROP TABLE #tmp_table 
+ 	</select>
+ 	<select id="getUsersByRoleID" parameterType="com.zs.rbac.entity.Role" resultType="com.zs.rbac.entity.User">
+		SELECT
+			a.userID,
+			a.userName,
+			a.realName,
+			a.password,
+			a.mobile,
+			a.eMail,
+			a.loginType,
+			a.uStatus,
+			a.locked,
+			a.createTime,
+			a.lastTime,
+			a.description,
+			row_number() over(order by a.userID desc) as serialNum
+			into #tmp_table
+		FROM
+			zs_rbac_user a
+		LEFT JOIN zs_rbac_user_role b ON a.UserID = b.UserID
+		LEFT JOIN zs_rbac_role c ON b.RoleID = c.RoleID
+		WHERE
+			c.RoleID = #{roleID}
+			<if test="userID !=null and '' !=userID">
+				and b.UserID=#{userID}
+			</if>
+		<include refid="paging" />
+		ORDER BY userID desc
+		DROP TABLE #tmp_table
+ 	</select >
+ 	<select id="ifCor_role_permission" parameterType="com.zs.rbac.entity.RolePermission" resultType="com.zs.rbac.entity.RolePermission">
+ 		SELECT
+			*
+		FROM
+			zs_rbac_role_permission
+		WHERE
+			
+			<if test="roleID !=null and '' != roleID">
+				RoleID = #{roleID}
+			</if>
+			<if test="permissionID !=null and '' != permissionID and permissionID !=0">
+				AND PermissionID = #{permissionID};
+			</if>
+		
+ 	</select>
+ 	<insert id="createRole" parameterType="com.zs.rbac.entity.Role">
+		INSERT INTO zs_rbac_role (
+		RoleName,
+		Available,
+		Priority,
+		CreateTime,
+		LastTime,
+		Description,
+		ORGID
+		)
+		VALUES
+			(#{roleName},#{available},#{priority},#{createTime},#{lastTime},#{description},#{orgid}) 		
+ 	</insert>
+ 	<insert id="correUser_Role" parameterType="com.zs.rbac.entity.UserRole" >
+	 	INSERT INTO zs_rbac_user_role (
+			UserID,
+			RoleID
+		)
+		VALUES
+		( #{userID}, #{roleID});
+ 	</insert>
+ 	 <delete id="deleteUserRole" parameterType="com.zs.rbac.entity.UserRole">
+ 		DELETE
+			FROM zs_rbac_user_role
+		WHERE
+			UserID = #{userID}
+			AND RoleID = #{roleID}
+ 	</delete>
+ 	<insert id="correRole_Permission" parameterType="com.zs.rbac.entity.RolePermission" >
+	 	INSERT INTO zs_rbac_role_permission (
+			RoleID,
+			permissionID
+		)
+		VALUES
+		( #{roleID}, #{permissionID});
+ 	</insert>
+ 	<delete id="deleteRolePermission" parameterType="com.zs.rbac.entity.RolePermission" >
+ 		DELETE  FROM zs_rbac_role_permission WHERE  ([RoleID]=#{roleID}) AND ([PermissionID]=#{permissionID})
+ 	</delete>
+ 	<update id="updateRole" parameterType="com.zs.rbac.entity.Role">
+ 		UPDATE zs_rbac_role
+ 		<set>
+ 			<if test="roleName !=null and ''!= roleName">
+ 				roleName=#{roleName},
+ 			</if>
+ 			<if test="available !=null">
+ 				available=#{available},
+ 			</if>
+ 			<if test="createTime  !=null and ''!= createTime">
+ 				createTime=#{createTime},
+ 			</if>
+ 			<if test="lastTime !=null and ''!= lastTime">
+ 				lastTime=#{lastTime},
+ 			</if>
+ 			<if test="description !=null and ''!= description">
+ 				description=#{description},
+ 			</if>
+ 			<if test="orgid  !=null and ''!= orgid">
+ 				orgid=#{orgid},
+ 			</if>
+ 			<if test="projGuid  !=null and ''!= projGuid">
+ 				projGuid=#{projGuid},
+ 			</if>
+ 			<!-- <if test="(uStatus  !=null and ''!= uStatus) or uStatus==0 or uStatus==1">
+ 				uStatus=#{uStatus},
+ 			</if> -->
+ 		</set>
+ 		WHERE roleID=#{roleID}
+ 	</update>
+ 	<delete id="deleteRole" parameterType="com.zs.rbac.entity.Role">
+ 			delete from zs_rbac_role where roleID=#{roleID}
+ 	</delete>
+ 	<!-- <select id="judgeIfExistUserName" parameterType="com.zs.rbac.entity.Role" resultType="java.lang.Integer">
+ 		select count(*)   from zs_rbac_role where userName=#{username}
+ 	</select>
+ 	 	<select id="judgeIfExistMobile" parameterType="com.zs.rbac.entity.Role" resultType="java.lang.Integer">
+ 		select count(*)   from zs_rbac_role where mobile=#{mobile}
+ 	</select>
+ 	 	<select id="judgeIfExistEmail" parameterType="com.zs.rbac.entity.Role" resultType="java.lang.Integer">
+ 		select count(*)   from zs_rbac_role where email=#{email}
+ 	</select> -->
+ </mapper>

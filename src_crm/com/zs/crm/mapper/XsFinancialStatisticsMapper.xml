@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zs.crm.dao.XsFinancialStatisticsDao">
+	<resultMap id="roomInfoResult" type="com.zs.crm.entity.tableStructure.XsRoomTableEntity">
+ 		<id property="roomGuid" column="RoomGUID"/>
+ 		<result property="roomInfo" column="RoomInfo"/>
+		<result property="bldArea" column="bldArea"/>
+		<result property="total" column="Total"/>
+		<result property="huXing" column="HuXing"/>
+		<result property="unitNo" column="UnitNo"/>
+		<result property="room" column="Room"/>
+		<result property="roomCode" column="BldCode"/>
+ 	</resultMap>
+ 	<resultMap id="cstInfoResult" type="com.zs.crm.entity.tableStructure.XsCstTableEntity">
+ 		<id property="cstGuid" column="CstGUID"/>
+ 		<result property="cstName" column="CstName"/>
+ 		<result property="mobileTel" column="MobileTel"/>
+ 		<result property="homeTel" column="HomeTel"/>
+ 		<result property="officeTel" column="OfficeTel"/>
+ 		<result property="fax" column="Fax"/>
+ 		<result property="gender" column="Gender"/>
+ 		<result property="cardId" column="CardID"/>
+ 	</resultMap>
+ 	<resultMap id="otherInfoResult" type="com.zs.crm.entity.XsFinancialStatisticsOtherInfoVo" >
+ 		<result property="depositAmount" column="depositAmount"/>
+ 		<result property="subscribeDate" column="subscribeDate"/>
+ 		<result property="paymentType" column="payFormName"/>
+ 		<result property="paymentAmount" column="paymentAmount"/>
+ 		<result property="paymentDate" column="paymentDate"/>
+ 		<result property="signUpDate" column="QsDate"/>
+ 		<result property="recordDate" column="recordDate"/>
+ 		<result property="marginDate" column="marginDate"/>
+ 		<result property="lendingAmount" column="lendingAmount"/>
+ 		<result property="lendingDate" column="lendingDate"/>
+ 		<result property="rhDate" column="rhDate"/>
+ 		<result property="unRecordDate" column="unRecordDate"/>
+ 		<result property="userName" column="userName"/>
+ 	</resultMap>
+ 	
+ 	<resultMap  id="financialStatisticsInfoResult" type="com.zs.crm.entity.XsFinancialStatisticsInfoVo">
+ 		<id property="xsTrade.tradeGuid" column="TradeGUID"/>
+ 		<result property="xsTrade.cstAllName" column="CstAllName"/>
+ 		<association property="xsCst" column="xsCst" resultMap="cstInfoResult"/>
+ 		<association property="xsRoom" column="xsRoom" resultMap="roomInfoResult"/>
+ 		<association property="xsOther" column="xsOther" resultMap="otherInfoResult"/>
+ 	</resultMap>
+ 	
+	<select id="getFinancialListInfoDao" parameterType="com.zs.crm.entity.XsFinancialStatisticsSearchInfoVo" resultMap="financialStatisticsInfoResult">
+		select * from (select ROW_NUMBER() over (order by g.subscribeDate desc,t.tradeguid) i,t.tradeguid,r.HuXing,t.cstallname,<!-- c.cardid,c.mobileTel,c.officeTel,c.homeTel,c.fax, -->t2.cardid,t2.mobileTel,t2.officeTel,t2.homeTel,t2.fax,
+		r.roomInfo,r.bldArea,r.Total,b.BldCode,r.UnitNo,r.Room,o.payFormName,g.depositAmount,g.subscribeDate,g.paymentAmount,h.paymentDate,h.lendingAmount,s.marginDate,s.lendingDate,ct.QSDate,s.rhDate,vm.userName
+		from s_Trade t LEFT JOIN s_Trade2Cst t2 on t.tradeguid = t2.tradeguid and t2.cstnum=1
+		left join p_Customer c on c.cstguid=t2.cstguid
+		left join s_Contract ct on ct.tradeguid = t.tradeguid and ct.status='激活'
+		left join p_room r on r.roomguid = t.roomguid 
+		left join p_Building b on b.bldguid = r.bldguid
+		left join (select tradeguid,sum(case when itemName='定金' then Amount end )as depositAmount,sum(case when itemName='首期' or itemName='楼款' then Amount end) as paymentAmount,min(lastdate) as subscribeDate 
+								from s_Fee group by tradeguid) as g on g.tradeguid=t.tradeguid
+		left join (select tradeguid,max(case when SSItemName='首期' or SSItemName='楼款' then SsDate end) as paymentDate,sum(case when YsItemName='银行按揭' or YsItemName='公积金' then YsAmount end) as lendingAmount
+							from s_Cwfx group by TradeGUID) as h on h.tradeguid=t.tradeguid
+		left join (select ContractGUID,max(case when ServiceProc='银行放款' or ServiceProc='公积金放款' then CompleteDate end) as lendingDate,max(case when ServiceItem='入伙服务' and ServiceProc='已交接钥匙' then CompleteDate end)as rhDate,
+							max(case when ServiceItem='合同登记' and ServiceProc='已备案' then CompleteDate end) as marginDate
+							from s_SaleService group by ContractGUID
+		) s ON s.ContractGUID=ct.ContractGUID 
+		left join s_Opportunity AS opp ON opp.CstGUID=c.CstGUID AND not exists (SELECT 1 from s_Opportunity WHERE CstGUID=opp.CstGUID AND scrm_timestamp_data>opp.scrm_timestamp_data 
+		<if test="projGuid != null and ''!=projGuid">
+			and projguid=#{projGuid} 
+		</if>
+		) 
+		<if test="projGuid != null and ''!=projGuid">
+			and opp.projguid=#{projGuid}
+		</if>
+    	left join vs_user_tm vm ON vm.value=cast(opp.UserGUID AS varchar(50)) and (vm.groupName like '%销售%' or vm.userName='其他')
+		left join s_Order o on o.RoomGUID = r.roomGUID and (o.status='激活' or o.status='关闭' and o.closeReason='转签约')
+		where t.tradestatus='激活' 
+		<if test="projGuid != null and ''!=projGuid">
+			and t.projguid=#{projGuid} and b.areafullname='A区' 
+		</if>
+		<if test="userGuid!=null and ''!=userGuid">
+			and opp.userGuid = #{userGuid}
+		</if>
+		<if test="cstName!=null and ''!=cstName">
+			and t.cstallname = #{cstName}
+		</if>
+		<!-- <if test="mobileTel!=null and ''!=mobileTel">
+			and (c.mobileTel = #{mobileTel} or c.officeTel = #{mobileTel} or c.homeTel = #{mobileTel} or c.fax = #{mobileTel})
+		</if> 2016-8-2 使用认购的手机号-->
+		<if test="mobileTel!=null and ''!=mobileTel">
+			and (t2.mobileTel = #{mobileTel} or t2.officeTel = #{mobileTel} or t2.homeTel = #{mobileTel} or t2.fax = #{mobileTel})
+		</if>
+		<if test="type == 1">
+			and r.HuXing != '车位'
+		</if>
+		<if test="type == 2">
+			and r.HuXing = '车位'
+		</if>
+		) a where 1=1
+		<if test="length!=null and ''!=length">
+			and i between ${startIndex}+1 and ${startIndex}+${length}
+		</if>
+	</select>
+</mapper>

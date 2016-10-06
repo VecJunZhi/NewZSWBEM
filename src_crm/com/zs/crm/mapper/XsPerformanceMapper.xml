@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="com.zs.crm.dao.XsPerformanceDao">
+ 	<select id="getBudgetedPerformanceByDateTime" parameterType="com.zs.crm.web.vo.XsPerformanceVo" resultType="com.zs.crm.entity.XsPerformanceEntity">
+		DECLARE @t TABLE (
+			ts INT,
+			BldArea money,
+			SalesAmount money,
+			backAmount money
+		) 
+		INSERT INTO @t SELECT SUM (TS) AS Ts,SUM (BldArea) AS BldArea,SUM (RmbAmount) AS SalesAmount,NULL
+			FROM s_SaleHSData WHERE CONVERT (VARCHAR(20), Qsdate, 120) BETWEEN #{startTime} AND #{endTime}
+			AND CloseReason = '' AND BldArea > 20 
+		UPDATE @t SET backAmount = (
+			SELECT SUM (a.RmbAmount) AS backsaleamount FROM dbo.s_Getin a
+			INNER JOIN dbo.s_Trade c ON a.SaleGUID = c.TradeGUID
+			WHERE a.GetDate BETWEEN #{startTime} AND #{endTime}
+			AND a.ItemType IN (
+				'贷款类房款',
+				'非贷款类房款'
+			)
+			AND a.SaleType = '交易'
+			AND (
+				c.TradeStatus = '激活'
+				OR (
+					c.TradeStatus = '关闭'
+					AND ISNULL(c.CloseReason, '') &lt;&gt; '作废'
+				)
+			)
+			AND ISNULL(a.Status, '') &lt;&gt; '作废'
+		) 
+		SELECT * FROM @t
+ 	</select>
+ 	<select id="getMy_BudgetedPerformanceByDateTime" parameterType="com.zs.crm.web.vo.XsPerformanceVo" resultType="com.zs.crm.entity.XsPerformanceEntity">
+	 	 DECLARE @t TABLE ( 
+        ts INT, 
+        BldArea money, 
+        SalesAmount money, 
+        backAmount money 
+     ) 
+     INSERT INTO @t SELECT  SUM (TS) AS Ts,SUM (BldArea) AS BldArea,SUM (RmbAmount) AS SalesAmount,NULL 
+        FROM s_SaleHSData A 
+        LEFT JOIN s_OC2Sale B ON B.SaleGUID=A.SaleGUID 
+        
+        LEFT JOIN vs_user_tm D ON D.value =CAST(B.UserGUID as varchar(max)) and groupName like'销售%' 
+        WHERE CONVERT (VARCHAR(20), Qsdate, 120)BETWEEN #{startTime} AND #{endTime} 
+        AND CloseReason = '' AND BldArea > 20 
+        AND UserGUID=#{ywy} 
+        <if test="projGuid!=null and ''!=projGuid">
+        	and ProjGUID = #{projGuid}
+        </if>
+     UPDATE @t SET backAmount = ( 
+        SELECT SUM (a.RmbAmount) AS backsaleamount 
+FROM dbo.s_Getin a 
+        INNER JOIN dbo.s_Trade c ON a.SaleGUID = c.TradeGUID 
+     INNER JOIN s_Opportunity d ON d.OppGUID=c.OppGUID 
+        WHERE a.GetDate BETWEEN #{startTime} AND #{endTime} 
+        AND a.ItemType IN ( 
+           '贷款类房款',   
+           '非贷款类房款',
+           '代收费用' <!-- 2016-7-29 lu -->
+        ) 
+        AND a.SaleType = '交易' 
+        AND ( 
+           c.TradeStatus = '激活' 
+           OR ( 
+              c.TradeStatus = '关闭' 
+              AND ISNULL(c.CloseReason, '') &lt;&gt; '作废' 
+           ) 
+        ) 
+        AND ISNULL(a.Status, '') &lt;&gt; '作废' 
+        AND UserGUID=#{ywy}
+        <if test="projGuid!=null and ''!=projGuid">
+        	and c.ProjGUID = #{projGuid}
+        </if> 
+     ) 
+     SELECT * FROM @t
+ 	</select>
+ 	<select id="getTeamMonthPerformanceRanking" parameterType="com.zs.crm.web.vo.XsPerformanceVo" resultType="com.zs.crm.entity.XsPerformanceEntity">
+			declare  @tmep1 TABLE( 
+			grp varchar(10), 
+			ywy varchar(50), 
+			ts int, 
+			salesamount money) 
+			insert into @tmep1 
+			select groups,ywy, 
+			        sum(CASE WHEN ProductType='住宅' and QSDate  between #{startTime} and #{endTime} THEN 1 ELSE 0 END) AS 'ts', 
+			        sum(CASE WHEN ProductType='住宅' and QSDate  between #{startTime} and #{endTime} THEN Total ELSE 0 END)AS 'salesAmount' 
+			        from 
+			        (SELECT te.groupName AS groups, 
+			        (CASE WHEN A.Ywy = null OR A.Ywy = ' ' THEN B.Ywy ELSE A.Ywy END)Ywy, 
+			        (CASE WHEN A.QSDate = null OR A.QSDate = ' ' THEN B.QSDate WHEN AAA.CloseReason = '换房' THEN AAA.QSDate  ELSE A.QSDate  END)QSDate, 
+			        (CASE WHEN  A.CloseReason IN ('退房','换房') THEN A.CloseDate  ELSE B.CloseDate  END)CloseDate, 
+			        RoomStatus ,TradeStatus ,s_trade .CloseReason  ,ProductType ,s_trade.ProjGUID,room.Total 
+			        FROM  s_Trade 
+			        LEFT JOIN s_Order A ON A.OrderGUID  = s_Trade .RGOrderGUID 
+			        LEFT JOIN s_Contract  B ON B.ContractGUID  = s_Trade .ContractGUID 
+			        LEFT JOIN rptvs_Room room ON room.RoomGUID = s_Trade.RoomGUID 
+			        LEFT JOIN s_Order AAA ON A.LastSaleGUID = AAA.OrderGUID 
+			       <!--  LEFT JOIN u_Group u ON u.zGUID=a.UserGUIDList and A.Ywy=u.name  -->
+			        LEFT JOIN zs_rbac_user us on us.UserName = A.Ywy
+					LEFT JOIN zs_user_teamgroup tg on tg.userId=us.userId
+					LEFT JOIN zs_teamgroup te on te.id = tg.teamGroupId
+			        WHERE TradeStatus = '激活' OR s_Trade.CloseReason = '退房')YA 
+			        <!-- where  groups != '招商组'  2016-8-6-->
+			        where groups like '%销售%'
+			        <if test="projGuid!=null and ''!=projGuid"><!--2016.9.23 增加项目id限制  -->
+			        	and YA.ProjGUID = #{projGuid}
+			        </if>
+			       GROUP BY YA.groups,YA.Ywy 
+			update @tmep1 set ywy = '其他' where grp='其他' 
+			select grp AS groups,SUM(ts) AS ts,sum(salesamount) AS salesAmount from @tmep1 
+			group by grp
+			order by ${orderWord} desc
+ 	</select>
+ 	<select id="getYWYMonthPerformanceRanking" parameterType="com.zs.crm.web.vo.XsPerformanceVo" resultType="com.zs.crm.entity.XsPerformanceEntity">
+		 	<!-- select groups,ywy, 
+			sum(CASE WHEN ProductType='住宅' and QSDate between #{startTime} and #{endTime} THEN 1 ELSE 0 END) AS 'ts', 
+			sum(CASE WHEN ProductType='住宅' and QSDate between #{startTime} and #{endTime} THEN Total ELSE 0 END)AS 'salesAmount' 
+			from 
+			(SELECT [group]AS groups, 
+			(CASE WHEN A.Ywy = null OR A.Ywy = ' ' THEN B.Ywy ELSE A.Ywy END)Ywy, 
+			(CASE WHEN A.QSDate = null OR A.QSDate = ' ' THEN B.QSDate WHEN AAA.CloseReason = '换房' THEN AAA.QSDate  ELSE A.QSDate  END)QSDate, 
+			(CASE WHEN  A.CloseReason IN ('退房','换房') THEN A.CloseDate  ELSE B.CloseDate  END)CloseDate, 
+			RoomStatus ,TradeStatus ,s_trade .CloseReason  ,ProductType ,s_trade.ProjGUID,room.Total 
+			FROM  s_Trade 
+			LEFT JOIN s_Order A ON A.OrderGUID  = s_Trade .RGOrderGUID 
+			LEFT JOIN s_Contract  B ON B.ContractGUID  = s_Trade .ContractGUID 
+			LEFT JOIN rptvs_Room room ON room.RoomGUID = s_Trade.RoomGUID 
+			LEFT JOIN s_Order AAA ON A.LastSaleGUID = AAA.OrderGUID 
+			LEFT JOIN u_Group u ON u.zGUID=a.UserGUIDList 
+			WHERE TradeStatus = '激活' OR s_Trade.CloseReason = '退房')YA 
+			<if test="ywy !=null and ''!=ywy">
+				WHERE ywy=#{ywy}     获取个人排行情况
+			</if>
+			GROUP BY YA.groups,YA.Ywy 
+			order by ${orderWord} desc -->
+			declare  @tmep1 TABLE( 
+			grp varchar(10), 
+			ywy varchar(50), 
+			ts int, 
+			salesamount money) 
+			insert into @tmep1 
+			select isnull(groups,'其他'),ywy, 
+			        sum(CASE WHEN ProductType='住宅' and QSDate  between #{startTime} and #{endTime} THEN 1 ELSE 0 END) AS 'ts', 
+			        sum(CASE WHEN ProductType='住宅' and QSDate  between #{startTime} and #{endTime} THEN Total ELSE 0 END)AS 'salesAmount' 
+			        from 
+			        (SELECT te.groupName AS groups, 
+			        (CASE WHEN A.Ywy = null OR A.Ywy = ' ' THEN B.Ywy ELSE A.Ywy END)Ywy, 
+			        (CASE WHEN A.QSDate = null OR A.QSDate = ' ' THEN B.QSDate WHEN AAA.CloseReason = '换房' THEN AAA.QSDate  ELSE A.QSDate  END)QSDate, 
+			        (CASE WHEN  A.CloseReason IN ('退房','换房') THEN A.CloseDate  ELSE B.CloseDate  END)CloseDate, 
+			        RoomStatus ,TradeStatus ,s_trade .CloseReason  ,ProductType ,s_trade.ProjGUID,room.Total 
+			        FROM  s_Trade 
+			        LEFT JOIN s_Order A ON A.OrderGUID  = s_Trade .RGOrderGUID 
+			        LEFT JOIN s_Contract  B ON B.ContractGUID  = s_Trade .ContractGUID 
+			        LEFT JOIN rptvs_Room room ON room.RoomGUID = s_Trade.RoomGUID 
+			        LEFT JOIN s_Order AAA ON A.LastSaleGUID = AAA.OrderGUID 
+			        <!-- LEFT JOIN u_Group u ON u.zGUID=a.UserGUIDList and A.Ywy=u.name  -->
+			        LEFT JOIN zs_rbac_user us on us.UserName = A.Ywy
+					LEFT JOIN zs_user_teamgroup tg on tg.userId=us.userId
+					LEFT JOIN zs_teamgroup te on te.id = tg.teamGroupId
+			        WHERE (TradeStatus = '激活' OR s_Trade.CloseReason = '退房') and te.groupName in ('销售A组','销售B组'))YA 
+			        WHERE 1 = 1
+			        <if test="ywy !=null and ''!=ywy">
+						and ywy=#{ywy}     <!-- 获取个人排行情况 -->
+					</if>
+					<if test="projGuid!=null and ''!=projGuid"><!--2016.9.23增加项目id限制  -->
+						and YA.ProjGUID = #{projGuid}
+					</if>
+			        GROUP BY YA.groups,YA.Ywy 
+			update @tmep1 set ywy = '其他' where grp='其他' 
+			select grp AS groups,ywy,SUM(ts) AS ts,sum(salesamount) AS salesAmount from @tmep1 
+			group by grp,ywy
+			order by ${orderWord} desc
+ 	</select>
+ 	<!-- 客户跟进分析 -->
+ 	<select id="followAnalysisByYwy" parameterType="com.zs.crm.web.vo.XsPerformanceVo" resultType="com.zs.crm.entity.XsPerformanceEntity" >
+	 	select u.[group] AS groups,s.Zygw AS ywy,  
+		SUM(CASE WHEN opp.Gjfs = '客户来电' THEN 1 ELSE 0 END) AS 'fromTel', 
+		SUM(CASE WHEN opp.Gjfs = '现场接待' AND CONVERT(varchar, p.CreatedOn , 101) = CONVERT(varchar, GjDate , 101) THEN 1 ELSE 0 END) AS 'fromInterview' 
+		from s_Opp2Gjjl opp 
+		LEFT JOIN s_Opportunity s ON s.OppGUID=opp.OppGUID 
+		LEFT JOIN p_Customer p ON p.CstGUID=s.CstGUID 
+		LEFT JOIN u_Group u ON u.zGUID=s.UserGUID 
+		WHERE CONVERT(varchar(100), GjDate, 23) between #{startTime} and #{endTime}  and [group] is not null AND Zygw is not null 
+		GROUP BY u.[group],s.Zygw 
+		ORDER BY  u.[group]
+ 	</select>
+ 	<select id="followAnalysisByGroup" parameterType="com.zs.crm.web.vo.XsPerformanceVo" resultType="com.zs.crm.entity.XsPerformanceEntity" >
+	 	select u.[group] AS groups, 
+		SUM(CASE WHEN opp.Gjfs = '客户来电' THEN 1 ELSE 0 END) AS 'fromTel', 
+		SUM(CASE WHEN opp.Gjfs = '现场接待' AND CONVERT(varchar, p.CreatedOn , 101) = CONVERT(varchar, GjDate , 101) THEN 1 ELSE 0 END) AS 'fromInterview' 
+		from s_Opp2Gjjl opp 
+		LEFT JOIN s_Opportunity s ON s.OppGUID=opp.OppGUID 
+		LEFT JOIN p_Customer p ON p.CstGUID=s.CstGUID 
+		LEFT JOIN u_Group u ON u.zGUID=s.UserGUID 
+		WHERE CONVERT(varchar(100), GjDate, 23) between #{startTime} and #{endTime}  and [group] is not null AND Zygw is not null 
+		GROUP BY u.[group]
+		ORDER BY  u.[group]
+ 	</select>
+ 	 	<select id="followAnalysisByTotalCount" parameterType="com.zs.crm.web.vo.XsPerformanceVo" resultType="com.zs.crm.entity.XsPerformanceEntity" >
+	 	select 
+		SUM(CASE WHEN opp.Gjfs = '客户来电' THEN 1 ELSE 0 END) AS 'fromTel', 
+		SUM(CASE WHEN opp.Gjfs = '现场接待' AND CONVERT(varchar, p.CreatedOn , 101) = CONVERT(varchar, GjDate , 101) THEN 1 ELSE 0 END) AS 'fromInterview' 
+		from s_Opp2Gjjl opp 
+		LEFT JOIN s_Opportunity s ON s.OppGUID=opp.OppGUID 
+		LEFT JOIN p_Customer p ON p.CstGUID=s.CstGUID 
+		LEFT JOIN u_Group u ON u.zGUID=s.UserGUID 
+		WHERE CONVERT(varchar(100), GjDate, 23) between #{startTime} and #{endTime}  and [group] is not null AND Zygw is not null 
+	</select>
+	<!-- 成交分析 -->
+	<sql id="customDealAnalysis">
+			create table #temps1( 
+			g varchar(10), 
+			zygw varchar(30), 
+			userguid varchar(max), 
+			ts int, 
+			qyts int 
+			) 
+			insert into #temps1 
+			select g,Ywy,AA.zGUID, 
+			SUM(CASE WHEN  (AA.TradeStatus = '激活' OR AA.CloseReason = '退房') AND AA.ProductType LIKE '%住宅%' THEN 1 ELSE 0 END)AS '住宅成交', 
+			0 
+			from( 
+			SELECT [group]AS g,zGUID, 
+			(CASE WHEN A.Ywy = null OR A.Ywy = ' ' THEN B.Ywy ELSE A.Ywy END)Ywy, 
+			(CASE WHEN A.QSDate = null OR A.QSDate = ' ' THEN B.QSDate WHEN AAA.CloseReason = '换房' THEN AAA.QSDate  ELSE A.QSDate  END)QSDate, 
+			(CASE WHEN  A.CloseReason IN ('退房','换房') THEN A.CloseDate  ELSE B.CloseDate  END)CloseDate, 
+			RoomStatus ,TradeStatus ,s_trade .CloseReason  ,ProductType ,s_trade.ProjGUID 
+			FROM  s_Trade 
+			LEFT JOIN s_Order A ON A.OrderGUID  = s_Trade .RGOrderGUID 
+			LEFT JOIN s_Contract  B ON B.ContractGUID  = s_Trade .ContractGUID 
+			LEFT JOIN rptvs_Room room ON room.RoomGUID = s_Trade.RoomGUID 
+			LEFT JOIN s_Order AAA ON A.LastSaleGUID = AAA.OrderGUID 
+			LEFT JOIN u_Group u ON u.zGUID=a.UserGUIDList 
+			)AA 
+			where ProductType='住宅' AND QSDate BETWEEN #{startTime} AND #{endTime}
+			group by g,Ywy,AA.zGUID 
+			update #temps1 
+			set qyts=qy.qy 
+			from #temps1 
+			inner join (SELECT D.zGUID,UserName,SUM(ISNULL(TS,0))AS qy FROM dbo.s_SaleHSData a 
+			join s_OC2Sale b ON b.SaleGUID=a.SaleGUID 
+			join e_myUser C ON C.UserGUID=B.UserGUID 
+			join u_Group D ON d.zGUID=B.UserGUID 
+			WHERE a.TradeType='签约'   AND a.QsDate BETWEEN #{startTime} AND #{endTime} 
+			GROUP By D.zGUID,UserName 
+			)qy ON qy.zGUID=#temps1.userguid 
+	</sql>
+	<select id="dealAnalysisByYwy" parameterType="com.zs.crm.web.vo.XsPerformanceVo" resultType="com.zs.crm.entity.XsPerformanceEntity" >
+			<include refid="customDealAnalysis"/>
+			select g AS groups , zygw AS ywy , ts AS rgts ,qyts from #temps1 
+			drop table #temps1
+	</select>
+	<select id="dealAnalysisByGroup" parameterType="com.zs.crm.web.vo.XsPerformanceVo" resultType="com.zs.crm.entity.XsPerformanceEntity" >
+			<include refid="customDealAnalysis"/>
+			select g AS groups , SUM(ts) AS rgts ,SUM(qyts) AS qyts from #temps1 
+			GROUP BY g
+			drop table #temps1
+	</select>
+	<select id="dealAnalysisByTotalCount" parameterType="com.zs.crm.web.vo.XsPerformanceVo" resultType="com.zs.crm.entity.XsPerformanceEntity" >
+			<include refid="customDealAnalysis"/>
+			select SUM(ts) AS rgts ,SUM(qyts) AS qyts from #temps1 
+			drop table #temps1
+	</select>
+
+ 	<select id="dealAnalysis_yqts" parameterType="com.zs.crm.web.vo.XsPerformanceVo" resultType="com.zs.crm.entity.XsPerformanceEntity" >
+ 					SELECT 
+                           SUM(hs.ts) AS yqts 
+                    FROM   dbo.s_SaleHSData hs 
+                           LEFT JOIN dbo.s_Order AS so ON hs.SaleGUID = so.OrderGUID 
+                    WHERE  hs.TradeType = '认购' 
+                           AND hs.Status = '激活' 
+                           AND DATEDIFF(DAY, so.EndDate, GETDATE()) > 0 
+                           AND so.EndDate IS NOT NULL 
+                           AND DATEDIFF(DAY, hs.QsDate, GETDATE()) >= 0 
+ 	</select>
+ </mapper>

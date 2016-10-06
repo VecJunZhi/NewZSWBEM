@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="com.zs.rbac.dao.UserExtDao">
+ 	<!-- 获得需要绑定的人员集合 23 -->
+ 	<select id="getPreConnectUsers" parameterType="com.zs.crm.web.vo.XsTeamGroupVo" resultType="com.zs.crm.entity.XsTeamGroupEntity">
+		SELECT
+			a.userId,
+			a.userName,
+			a.realName,
+			a.mobile into #tmp_table
+		FROM
+			zs_rbac_user a
+		WHERE
+			a.UserID NOT IN (
+				SELECT
+					a.UserID
+				FROM
+					zs_rbac_user_ext a
+				LEFT JOIN zs_rbac_user b ON a.userId = b.UserID
+				WHERE
+					a.UserID = b.userId
+				AND a.property = #{property}
+			)
+		ORDER BY
+			a.UserID DESC;
+		<!-- 不分页 -->
+		<if test="rows ==null or ''== rows"> 
+			SELECT * FROM #tmp_table where 1=1 
+		</if>
+		<!-- 分页 -->
+		<if test="rows !=null and ''!= rows">
+			select top ${rows} * from #tmp_table where userId not in (select top ${startLength} userId from #tmp_table ORDER BY userId desc)
+		</if>
+		<if test="userName != null and '' != userName">
+ 			 and realName like '%${userName}%'
+ 		</if>
+ 		<if test="userId != null and '' != userId">
+ 			 and userId =#{userId}
+ 		</if>
+ 		ORDER BY userId desc
+		drop TABLE #tmp_table 
+	</select>
+ 	<!-- 获得已经绑定的人员名单  23-->
+ 	<select id="getConnectedUsers" parameterType="com.zs.crm.web.vo.XsTeamGroupVo" resultType="com.zs.crm.entity.XsTeamGroupEntity">
+		SELECT
+			a.userId,a.userName,a.realName,a.mobile,b.id,b.property as groupType into  #tmp2_table 
+		FROM
+			zs_rbac_user a
+		LEFT JOIN zs_rbac_user_ext b ON a.UserID = b.userId
+		WHERE
+			a.UserID = b.userId
+		<if test="property !=null and ''!= property">
+			AND b.property =#{property}
+		</if>
+		ORDER BY
+			a.UserID DESC;
+		<if test="rows ==null or ''== rows">
+			SELECT * FROM #tmp2_table where 1=1 
+		</if>
+		<if test="rows !=null and ''!= rows">
+			select top ${rows} * from #tmp2_table where userId not in (select top ${startLength} userId from #tmp2_table ORDER BY userId desc)
+		</if>
+		<if test="userName != null and '' != userName">
+ 			 and realName like '%${userName}%'
+ 		</if>
+ 		ORDER BY userId desc
+		drop TABLE #tmp2_table 
+ 	</select>
+ 	<!-- 将rbac 用户与 crm 销售用户进行绑定 -->
+ 	<insert id="insertUserConnectExt" parameterType="com.zs.crm.web.vo.XsTeamGroupVo">
+		INSERT INTO zs_rbac_user_ext (
+			userId,
+			userName,
+			property,
+			value,
+			description
+		)VALUES
+			<foreach collection="list" item="xsTeamGroup" index="index" separator=",">
+			(#{xsTeamGroup.userId}, #{xsTeamGroup.userName}, #{xsTeamGroup.property}, #{xsTeamGroup.value},#{xsTeamGroup.description})
+ 		</foreach>
+ 	</insert>
+ 	<!-- 解除绑定 -->
+ 	<delete id="deleteUserConnect" parameterType="com.zs.crm.web.vo.XsTeamGroupVo">
+ 		DELETE  FROM zs_rbac_user_ext WHERE id= #{id};
+ 	</delete>
+ 	<select id="getUsetExtById" parameterType="Integer" resultType="com.zs.rbac.entity.UserExt">
+		select * from zs_rbac_user_ext where userId=#{userId}
+	</select>
+	<select id="judgeIfCorSystem"  parameterType="com.zs.rbac.entity.UserExt" resultType="com.zs.rbac.entity.UserExt">
+	 	SELECT
+			a.*
+		FROM
+			[dbo].[zs_rbac_user_ext] a
+		LEFT JOIN zs_user_teamgroup b ON a.userId = b.userId
+		WHERE
+			b.id = #{id}
+			<if test="property !=null and ''!= property">
+				AND a.property =#{property}
+			</if>
+ 	</select>
+ 	<select id="getUserExtInfoDao" parameterType="com.zs.rbac.entity.UserExt" resultType="com.zs.rbac.entity.UserExt">
+ 		select * from zs_rbac_user_ext where 1 = 1
+ 		<if test="userId!=null and ''!=userId">
+ 			and userId = #{userId}
+ 		</if>
+ 		<if test="property!=null and ''!=property">
+ 			and property = #{property}
+ 		</if>
+ 	</select>
+ 	<insert id="insertUserExtInfoDao" parameterType="com.zs.rbac.entity.UserExt">
+ 		insert into zs_rbac_user_ext(userId,userName,property,value,description) values (#{userId},#{userName},#{property},#{value},#{description})
+ 	</insert>
+ 	<insert id="updateUserExtInfoDao" parameterType="com.zs.rbac.entity.UserExt">
+ 		update zs_rbac_user_ext set value=#{value}
+ 		where userId = #{userId} and property = #{property}
+ 	</insert>
+ </mapper>

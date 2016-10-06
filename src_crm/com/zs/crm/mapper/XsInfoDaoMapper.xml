@@ -1,0 +1,722 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper  namespace="com.zs.crm.dao.XsCstInfoDao">
+	<insert id="insertXsCstInfoDao" parameterType="com.zs.crm.entity.tableStructure.XsCstTableEntity">
+		declare @guid nvarchar(50)
+		set @guid=newID()
+		insert into p_Customer (CstGUID,FirstName,LastName,CstName,OfficeTel,HomeTel,Email,MobileTel,CstType,Gender,Fax,
+			ModifyOn,ModifyBy,IsReceiveSMS,CreatedOn,CreatedBy,CreatedByGUID) 
+		values(@guid,#{firstName},#{lastName},#{cstName},#{officeTel},#{homeTel},#{email},#{mobileTel},#{cstType},#{gender},
+			#{fax},#{modifyOn},#{modifyBy},#{isReceiveSms},#{createdOn},#{createdBy},#{createdByGuid})
+	</insert>
+	<insert id="insertXsCstAttrDao" parameterType="com.zs.crm.entity.tableStructure.XsCstAttrTableEntity">
+		insert into p_CstAttribute (CstGUID,WorkArea,HomeArea,EduLevel,Family,Work,BuyersUse,FromArea,Jzyt,ZnNum,ZyNum,
+			HaveBM,IsMainJcz,Lxfs) 
+		values(#{cstGuid},#{workArea},#{homeArea},#{eduLevel},#{family},#{work},#{buyersUse},#{fromArea},#{jzyt},#{znNum},
+			#{zyNum},#{haveBm},#{isMainJcz},#{lxfs}) 
+	</insert>
+	<insert id="insertXsCstAttachDao" parameterType="com.zs.crm.entity.tableStructure.XsCstAttachTableEntity">
+		declare @attachGuid nvarchar(50)
+		set @attachGuid=newID()
+		insert into p_CstAttach (CstAttachGUID,BUGUID,CstGUID,ProjGUID,UserGUID) 
+		values(@attachGuid,#{buGuid},#{cstGuid},#{projGuid},#{userGuid}) 
+	</insert>
+	<insert id="insertXsOppDao" parameterType="com.zs.crm.entity.tableStructure.XsOppTableEntity">
+		declare @oppGuid nvarchar(50)
+		set @oppGuid=newID()
+		insert into s_Opportunity (OppGUID,BUGUID,ProjGUID,OppSource,CstGUID,Status,CreatedOn,CreatedBy,CreatedByGUID,IsCreatorUse,
+			Competitor,ModifyOn,ModifyBy,MainMediaName,SubMediaName,Gfys,Gfyt,Xqts,Gzqs,Gzjg,Gzfm1,Gzfm2,Gzfm3,UserGUID,
+			LastDate,NextDate,NextContent,Gfyx,DfNum,FpNum,FirstGfyx,Zygw)
+		values(@oppGuid,#{buGuid},#{projGuid},#{oppSource},#{cstGuid},#{status},#{createdOn},#{createdBy},
+			#{createdByGuid},#{isCreatorUse},#{competitor},#{modifyOn},#{modifyBy},#{mainMediaName},#{subMediaName},
+			#{gfys},#{gfyt},#{xqts},#{gzqs},#{gzjg},#{gzfm1},#{gzfm2},#{gzfm3},#{userGuid},#{lastDate},#{nextDate},
+			#{nextContent},#{gfyx},#{dfNum},#{fpNum},#{firstGfyx},#{zygw}) 
+	</insert>
+	<insert id="insertXsOpp2CstDao" parameterType="com.zs.crm.entity.tableStructure.XsOpp2CstTableEntity">
+		declare @opp2CstGuid nvarchar(50)
+		set @opp2CstGuid=newID()
+		insert into s_Opp2Cst (Opp2CstGUID,OppGUID,CstGUID,CstNum) 
+		values (@opp2CstGuid,#{oppGuid},#{cstGuid},#{cstNum})	
+	</insert>
+	<insert id="insertXsOpp2RoomDao" parameterType="com.zs.crm.entity.tableStructure.XsOpp2RoomTableEntity">
+		declare @rowGuid nvarchar(50)
+		set @rowGuid=newID()
+		delete from s_Opp2Room where oppguid =#{oppGuid}
+		insert into s_Opp2Room (RowGUID,YxYeTai,YxFangXing,YxArea,OppGUID,Num) 
+		values (@rowGuid,#{yxYeTai},#{yxFangXing},#{yxArea},#{oppGuid},#{num})
+	</insert>
+	<insert id="insertXsFollowInfoDao" parameterType="com.zs.crm.entity.tableStructure.XsOpp2GjjlTableEntity">
+		declare @gjjlGuid nvarchar(50)
+		set @gjjlGuid=newID()
+		insert into s_Opp2Gjjl (GjjlGUID,OppGUID,Status,Gfyx,GjDate,GjrGUID,Gjfs,Gjxw,GjContent,NextDate,NextContent,
+			Remark)
+		values(@gjjlGuid,#{oppGuid},#{status},#{gfyx},#{gjDate},#{gjrGuid},#{gjfs},#{gjxw},#{gjContent},#{nextDate},
+			#{nextContent},#{remark})
+		update s_Opportunity set LastGjjlGUID=@gjjlGuid where OppGUID=#{oppGuid}
+	</insert>
+	
+	<resultMap id="cstInfoResult" type="com.zs.crm.entity.tableStructure.XsCstTableEntity">
+  	    <id property="cstGuid" column="CstGUID" /> 
+  		<result property="cstName" column="CstName"/>
+  		<result property="mobileTel" column="MobileTel"/>
+  		<result property="homeTel" column="HomeTel"/>
+  		<result property="officeTel" column="OfficeTel"/>
+  		<result property="fax" column="Fax"/>
+  		<result property="gender" column="Gender"/>
+  		<result property="cardId" column="CardId"/>
+  		<result property="description" column="Description"/>
+  		<result property="createdOn" column="createdOn"/>
+	</resultMap>
+	<resultMap id="cstAttrInfoResult" type="com.zs.crm.entity.tableStructure.XsCstAttrTableEntity">
+		<result property="homeArea" column="HomeArea"/>
+		<result property="workArea" column="WorkArea"/>
+		<result property="work" column="Work"/>
+		<result property="family" column="Family"/>
+		<result property="ageGroup" column="AgeGroup"/>
+		<result property="zyNum" column="ZyNum"/>
+		<result property="buyersUse" column="BuyersUse"/>
+	</resultMap>
+	<resultMap id="cstOppInfoResult" type="com.zs.crm.entity.tableStructure.XsOppTableEntity">
+		<result property="oppGuid" column="OppGUID"/>
+		<result property="gfyx" column="Gfyx"/>
+  		<result property="lastDate" column="LastDate"/>
+  		<result property="nextDate" column="nextDate"/> 
+  		<result property="oppSource" column="OppSource"/>
+  		<result property="gzfm1" column="Gzfm1"/>
+  		<result property="gzfm2" column="Gzfm2"/>
+  		<result property="gzfm3" column="Gzfm3"/>
+  		<result property="gfyt" column="Gfyt"/>
+  		<result property="mainMediaName" column="MainMediaName"/>
+  		<result property="subMediaName" column="SubMediaName"/>	
+  		<result property="nextDate" column="NextDate"/>
+  		<result property="competitor" column="Competitor"/>   
+  		<result property="gfys" column="Gfys"/>
+  		<result property="dfNum" column="DfNum"/>
+  		<result property="zygw" column="Zygw"/>
+  		<result property="createdOn" column="CreatedOn"/>
+  		<result property="status" column="Status"/>
+  		<result property="closedOn" column="ClosedOn"/>
+  		<result property="estCloseDate" column="EstCloseDate"/>
+  		<result property="topic" column="Topic"/>
+  		<result property="statusReason" column="statusReason"/>
+  		<result property="description" column="description"/>
+	</resultMap>
+	<resultMap id="cstOpp2GjjlInfoResult" type="com.zs.crm.entity.tableStructure.XsOpp2GjjlTableEntity">
+  		<result property="status" column="Status"/>
+  		<result property="gjfs" column="Gjfs"/>
+  		<result property="gjDate" column="GjDate"/>
+  		<result property="gjContent" column="GjContent"/>
+	</resultMap>
+	<resultMap id="cstOpp2RoomInfoResult" type="com.zs.crm.entity.tableStructure.XsOpp2RoomTableEntity">
+  		<result property="yxArea" column="YxArea"/>
+  		<result property="yxFangXing" column="YxFangXing"/>
+  		<result property="yxYeTai" column="YxYeTai"/>
+	</resultMap>
+	<resultMap id="userInfoResult" type="com.zs.crm.entity.tableStructure.XsEmployeeTableEntity">
+  		<result property="userName" column="UserName"/>
+  		<result property="mobilePhone" column="MobilePhone"/>
+	</resultMap> 
+	
+	<resultMap id="XsCstResult" type="com.zs.crm.entity.XsCstInfo">	
+		<id property="cstId" column="cstid"/>
+		<association property="xsCst" column="cst" resultMap="cstInfoResult"/>
+		<association property="xsCstAttr" column="cstAttr" resultMap="cstAttrInfoResult"/>
+		<association property="xsOpp" column="opp" resultMap="cstOppInfoResult"/>
+		<association property="xsOpp2Room" column="opp2Room" resultMap="cstOpp2RoomInfoResult"/>
+		<association property="xsOpp2Gjjl" column="opp2Gjjl" resultMap="cstOpp2GjjlInfoResult"/>
+		<association property="employee" column="employee" resultMap="userInfoResult"/>			
+	</resultMap>
+	
+	<sql id="cstlistByUserName_select1">
+		declare @overdueDays int;
+		select @overdueDays=名称 from dbo.zs_词典 where 类别='逾期天数';
+		SELECT  * into #xsTemp  FROM (SELECT
+			t.cstGUID AS cstId,
+			p.cstGUID AS cstGuid,
+			p.cstName,
+			p.mobileTel,
+			p.officeTel,
+			p.homeTel,
+			p.fax,
+			p.createdOn,
+			n.userName,
+			n.mobile AS mobilePhone,
+			t.userGUID,
+			t.projGUID,
+			t.OppSource AS gjfs,
+			t.status,
+			t.closedOn,
+			t.lastDate,
+			t.nextDate,
+			t.gfyx,
+			<!-- t.createdOn, -->
+			t.estCloseDate,
+			t.zygw ,
+			t.topic,
+			p.cardID, 
+			p.gender,
+			p1.workArea, 
+			p1.buyersUse,
+			p1.ageGroup,
+			t.mainMediaName,
+			t.fpr,
+			c.yxFangXing,
+			c.yxArea,
+			p1.homeArea,
+			t.oppGuid
+		FROM
+			s_Opportunity t
+		LEFT JOIN P_Customer p ON p.CstGUID = t.CstGUID
+		<!-- LEFT JOIN myUser m ON m.UserGUID = t.UserGUID -->
+		LEFT JOIN zs_rbac_user_ext m ON m.value= CONVERT(varchar(255),t.UserGUID)
+		LEFT JOIN zs_rbac_user n ON m.userId = n.UserID
+		LEFT JOIN p_CstAttribute p1 ON p1.CstGUID = p.CstGUID
+		LEFT jOIN s_Opp2Room c ON c.OppGUID=t.OppGUID
+		WHERE
+			 NOT EXISTS (
+				SELECT
+					1
+				FROM
+					s_Opportunity
+				WHERE
+					CstGUID = t.CstGUID
+					AND scrm_timestamp_data > t.scrm_timestamp_data
+					<if test="projGUID !=null and ''!= projGUID">
+						and projGUID = '${projGUID}'
+					</if>
+			) 
+			<if test="projGUID !=null and ''!= projGUID">
+				and projGUID = '${projGUID}'
+			</if>
+		) a 
+	</sql>
+	<sql id="cstlistByUserName_condition">
+		<if test="cstName!=null and ''!=cstName">
+			and CstName like '%${cstName}%'
+		</if>
+		<if test="mobileTel!=null and ''!=mobileTel">
+			and (MobileTel like '%${mobileTel}%' or OfficeTel like '%${mobileTel}%' or HomeTel like '%${mobileTel}%' or Fax like '%${mobileTel}%' )
+		</if>
+		<if test="cstType!=null and cstType=='toVisit'">
+			<!-- and DATEDIFF(DAY, lastDate, GETDATE()) = 0 -->
+			 and nextDate BETWEEN CONVERT(VARCHAR(10),DATEADD(DAY, -1, GETDATE()),23) AND CONVERT(varchar(100), GETDATE(), 23) 
+			 and status not in('签约','认购') and (estCloseDate is null or estCloseDate &lt;= '1900-1-1 00:00:00')
+		</if>
+		<if test="cstType!=null and cstType=='overDue3Days'">
+			and DATEDIFF(DAY, lastDate, GETDATE()) > (@overdueDays-3) and DATEDIFF(DAY, lastDate, GETDATE()) &lt;=@overdueDays
+			and status not in ('签约','认购') and (estCloseDate is null or estCloseDate &lt;= '1900-1-1 00:00:00')
+		</if>
+		<if test="cstType!=null and cstType=='overDue'">
+			and DATEDIFF(DAY, lastDate, GETDATE()) >@overdueDays
+			and status not in ('签约','认购') and (estCloseDate is null or estCloseDate &lt;= '1900-1-1 00:00:00')
+		</if>
+		<if test="cstType!=null and cstType=='newAnalysisCount'">
+			and fpr='1' and (estCloseDate is null or estCloseDate &lt;= '1900-1-1 00:00:00')
+		</if>
+		<!-- 2016.3.13 -->
+		<if test="gfyx!=null and ''!=gfyx">
+			and Gfyx in (${gfyx})
+		</if>
+		<if test="status!=null and ''!=status">
+			and Status in (${status})
+		</if>
+		<if test="ageGroup!=null and ''!=ageGroup">
+			and AgeGroup in (${ageGroup})
+		</if>
+		<if test="gjfs!=null and ''!=gjfs">
+			and Gjfs in (${gjfs})<!--待修改，跟进方式从最新跟进记录中找还是？  -->
+		</if>
+		<if test="subMediaName!=null and ''!=subMediaName">
+			and SubMediaName in (${subMediaName})<!--是从子类型中找还是主类型中找  -->
+		</if>
+		<if test="mainMediaName!=null and ''!=mainMediaName">
+			and MainMediaName in (${mainMediaName})<!--是从子类型中找还是主类型中找  -->
+		</if>
+		<if test="yxArea!=null and ''!=yxArea">
+			<!-- and vp.YxArea in (${yxArea}) -->
+			and (${yxArea})
+		</if>
+		<if test="projGUID !=null and ''!= projGUID">
+			<!-- and projGUID = '${projGUID}' -->
+			and projGUID = '${projGUID}'
+		</if>
+		<if test="isAll==2">
+			and topic = '1'
+		</if>
+	</sql>
+	<sql id="cstlistByUserName_select2">
+	SELECT a.* ,s2.GjContent, s2.GjDate,s2.scrm_timestamp_data INTO #temp001
+	FROM #xsTemp a 
+	<!-- LEFT JOIN [s_Opp2Cst ] s1 ON s1.CstGUID = a.cstId 
+	LEFT JOIN s_Opp2Gjjl s2 ON s2.OppGUID = s1.OppGUID 2016.9.22 解决当前项目下取当前项目的最新跟进内容问题--> 
+	LEFT JOIN s_Opp2Gjjl s2 ON s2.OppGUID = a.oppGuid
+	select oppGuid,cstGuid,cstId,cstName,cardID,mobileTel,gender,homeArea,yxFangXing,yxArea,gfyx,mainMediaName,gjContent,nextDate,zygw,gjDate,scrm_timestamp_data,gjfs,lastDate,status,topic,createdOn,mobilePhone 
+			INTO #temp002 
+			from #temp001 as t 
+			 where not exists (select 1 from #temp001 where cstId=t.cstId and scrm_timestamp_data>t.scrm_timestamp_data
+			<if test="projGUID !=null and ''!= projGUID">
+				and projGUID = '${projGUID}'
+			</if>
+			)AND scrm_timestamp_data is not null
+			<if test="projGUID !=null and ''!= projGUID">
+				and projGUID = '${projGUID}'
+			</if> 
+	GROUP BY oppGuid, cstGuid,cstId,CstName,CardID,MobileTel,Gender,HomeArea,yxFangXing,YxArea,Gfyx,mainMediaName,GjContent,NextDate,Zygw,GjDate,scrm_timestamp_data,Gjfs,LastDate,Status,Topic,CreatedOn,mobilePhone
+	</sql>
+	<sql id="cstlistByUserName_selectDetail">
+	SELECT * from ( 
+		select *,row_number() over(order by 
+		<if test="sortWay==1">
+			scrm_timestamp_data desc  <!-- 跟进日期降序 -->
+		</if>
+		<if test="sortWay==2">
+			scrm_timestamp_data		  <!--跟进日期升序  -->
+		</if>
+		<if test="sortWay==3">
+			createdOn desc            <!--创建日期降序  -->
+		</if>
+		<if test="sortWay==4">
+			createdOn                 <!--创建日期升序  -->
+		</if>
+		) rn   
+		from #temp002) a  
+	where rn between ${startIndex}+1 and ${startIndex}+${length}
+	</sql>
+	<sql id="cstlistByUserName_selectCount">
+		SELECT COUNT(*) FROM  #temp002
+	</sql>
+	<sql id="cstlistByUserName_dropTemp">
+		DROP TABLE #xsTemp
+		drop TABLE #temp001
+		DROP TABLE #temp002
+	</sql>
+	<select id="getXsCstCountByEmployeeDao" parameterType="com.zs.crm.entity.XsCstSearchOption" resultType="Integer">
+		<include refid="cstlistByUserName_select1"/>
+		<where>
+			userGUID=#{userGUID} AND Zygw not in('公共客户','垃圾箱客户')
+			<include refid="cstlistByUserName_condition"/>
+		</where>
+		<include refid="cstlistByUserName_select2"/>
+		<include refid="cstlistByUserName_selectCount"/>
+		<include refid="cstlistByUserName_dropTemp"/>	
+	</select>
+	<select id="getXsCstListByEmployeeDao" parameterType="com.zs.crm.entity.XsCstSearchOption" resultMap="XsCstResult">
+		<include refid="cstlistByUserName_select1"/>
+		<where>
+			1 = 1 
+			<if test="userGUID != null and ''!=userGUID">
+				and userGUID=#{userGUID} AND Zygw not in('公共客户','垃圾箱客户')
+			</if>
+			<include refid="cstlistByUserName_condition"/>
+		</where>
+		<include refid="cstlistByUserName_select2"/>
+		<include refid="cstlistByUserName_selectDetail"/>
+		<include refid="cstlistByUserName_dropTemp"/>	
+	</select>
+
+	<!--根据客户id获取客户信息  -->
+	<select id="getXsCstInfoByCstGuidDao" parameterType="com.zs.crm.entity.XsCstSearchOption" resultMap="XsCstResult">
+		select  a.CstGUID as cstid,a.CstName,a.Gender,a.MobileTel,a.HomeTel,a.OfficeTel,a.Fax,a.CardId,a.Description,c.Work,c.WorkArea,c.HomeArea,c.Family,c.AgeGroup,c.ZyNum,c.BuyersUse,d.YxFangXing,d.YxArea,d.YxYeTai,e.OppSource,e.CreatedOn,e.ModifyOn,e.Gfyx,e.Gzfm1,e.Gzfm2,e.Gzfm3,e.Gfyt,
+		e.MainMediaName,e.SubMediaName,e.NextDate,e.Competitor,e.Gfys,e.DfNum,e.OppGUID,e.Status,e.ClosedOn,e.EstCloseDate,e.statusReason,e.description from p_Customer a,p_CstAttribute c,s_Opp2Room d,s_Opportunity e
+		where a.CstGUID = c.CstGUID and a.CstGUID=e.CstGUID and e.OppGUID=d.OppGUID and e.OppGUID=#{oppGUID}
+		<if test="cstGuid!=null and ''!=cstGuid">
+			and a.CstGUID=#{cstGuid}
+		</if>
+	</select>
+	<!--根据客户id获取客户跟进信息  -->
+	<select id="getXsCstFollowInfoByCstGuidDao" parameterType="com.zs.crm.entity.XsCstSearchOption" resultMap="XsCstResult">
+		<!-- select a.GjjlGUID as cstid,c.OppGUID,a.GjDate,a.GjContent,a.Status,a.Gjfs,b.UserName from s_Opp2Gjjl a,myUser b,s_Opportunity c where a.GjrGUID=b.UserGUID and a.OppGUID=c.OppGUID and c.CstGUID=#{cstGuid} order by a.scrm_timestamp_data desc -->
+		select a.GjjlGUID as cstid,t.OppGUID,a.GjDate,a.GjContent,a.Status,a.Gjfs,b.UserName 
+		from s_Opportunity t 
+		left join s_Opp2Gjjl a ON a.OppGUID=t.OppGUID 
+		left join myUser b ON b.UserGUID=a.GjrGUID 
+		<!-- where NOT EXISTS ( SELECT 1 
+                    FROM s_Opportunity 
+                       WHERE CstGUID = t.CstGUID AND scrm_timestamp_data > t.scrm_timestamp_data ) 
+                       and t.CstGUID=#{cstGuid}  2016.9.18--> 
+        where  t.CstGUID=#{cstGuid} and t.OppGUID=#{oppGUID}            
+		order by a.scrm_timestamp_data desc
+	</select>
+	<!-- 查询来访次数 -->
+	<select id="getVisitTimesDao" parameterType="com.zs.crm.entity.XsCstSearchOption" resultType="integer">
+		<!-- select count(*) from p_Customer a,s_Opportunity b,s_Opp2Gjjl c where a.CstGUID=b.CstGUID and b.OppGUID = c.OppGUID and c.Gjfs in ('现场接待','来访') and a.CstGUID= #{cstGuid} -->
+		select count(*) from s_Opp2Gjjl where OppGUID = #{oppGUID} and Gjfs in ('现场接待','来访')
+	</select>
+	<!--查询首次到访时间  -->
+	<select id="getFirstVisitTimeDao" parameterType="com.zs.crm.entity.XsCstSearchOption" resultType="String" >
+		<!-- select top 1 c.GjDate from p_Customer a,s_Opportunity b,s_Opp2Gjjl c where a.CstGUID=b.CstGUID and b.OppGUID=c.OppGUID and c.Gjfs='现场接待' and a.CstGUID=#{cstGuid} ORDER by c.GjDate ASC -->
+		select top 1 GjDate from s_Opp2Gjjl where OppGuid=#{oppGUID} and Gjfs='现场接待' order by GjDate
+	</select>
+	<!-- 查询客户归属 -->
+	<select id="getCstBelongByTelDao" parameterType="com.zs.crm.entity.XsCstSearchOption" resultMap="XsCstResult">
+		declare @var datetime
+		select @var=max(b.LastDate) from p_Customer a,s_Opportunity b where a.CstGUID=b.CstGUID and (a.MobileTel=#{mobileTel} or a.HomeTel=#{mobileTel} or a.OfficeTel=#{mobileTel} or a.Fax=#{mobileTel}) group by b.CstGUID
+		select b.Zygw,b.CreatedOn,b.Status,b.OppGUID,a.CstGUID,a.CstName,c.UserName,c.MobilePhone from p_Customer a,s_Opportunity b,myUser c where a.CstGUID=b.CstGUID and (a.MobileTel=#{mobileTel} or a.HomeTel=#{mobileTel} or a.OfficeTel=#{mobileTel} or a.Fax=#{mobileTel}) and c.UserName=b.Zygw and b.LastDate=@var
+	</select>
+	
+	<!--更新客户的基本信息  -->
+	<update id="updateXsCstInfoDao" parameterType="com.zs.crm.entity.tableStructure.XsCstTableEntity">
+		<if test="(cstName!=null and ''!=cstName) or (mobileTel!=null and ''!=mobileTel) or (gender!=null and ''!=gender) or (cardId!=null and ''!=cardId)">
+		update p_Customer
+		<set>
+			<if test="cstName!=null and ''!=cstName">
+				CstName = #{cstName},
+			</if>
+			<if test="mobileTel!=null and ''!=mobileTel">
+				MobileTel = #{mobileTel},
+			</if>
+			<if test="gender!=null and ''!=gender">
+				Gender = #{gender},
+			</if>
+			<if test="cardId!=null and ''!=cardId">
+				CardId = #{cardId},
+			</if>
+			<if test="description!=null and ''!=description">
+				Description = #{description},
+			</if>
+			HomeTel = #{homeTel},OfficeTel = #{officeTel},Fax = #{fax}
+		</set>
+		where CstGUID = #{cstGuid}
+		</if>
+	</update>
+	<!--更新客户的特征信息  -->
+	<update id="updateXsCstAttrInfoDao" parameterType="com.zs.crm.entity.tableStructure.XsCstAttrTableEntity">
+		<if test="(ageGroup!=null and ''!=ageGroup) or (homeArea!=null and ''!=homeArea) or (workArea!=null and ''!=workArea) or (family!=null and ''!=family) or (zyNum!=null and ''!=zyNum) or (buyersUse!=null and ''!=buyersUse)">
+		update p_CstAttribute
+		<set>
+			<if test="ageGroup!=null and ''!=ageGroup">
+				AgeGroup = #{ageGroup},
+			</if>
+			<if test="homeArea!=null and ''!=homeArea">
+				HomeArea = #{homeArea},
+			</if>
+			<if test="workArea!=null and ''!=workArea">
+				WorkArea = #{workArea},
+			</if>
+			<if test="work!=null and''!=work">
+				Work = #{work},
+			</if>
+			<if test="family!=null and ''!=family">
+				Family = #{family},
+			</if>
+			<if test="zyNum!=null and ''!=zyNum">
+				ZyNum = #{zyNum},
+			</if>
+			<if test="buyersUse!=null and ''!=buyersUse">
+				BuyersUse = #{buyersUse}
+			</if>
+		</set>
+			where CstGUID = #{cstGuid}
+		</if>
+	</update>
+	<!--更新客户的机会信息  -->
+	<update id="updateXsOppInfoDao" parameterType="com.zs.crm.entity.tableStructure.XsOppTableEntity">
+		<if test="(gzfm1!=null and ''!=gzfm1) or (gfyt!=null and ''!=gfyt) or (mainMediaName!=null and ''!=mainMediaName) or (subMediaName!=null and ''!=subMediaName) or (competitor!=null and ''!=competitor) or (dfNum!=null and ''!=dfNum) or (gfys!=null and ''!=gfys) or (estCloseDate !=null) or(topic!=null and ''!=topic)">
+		update s_Opportunity
+		<set>
+			<if test="gzfm1!=null and ''!=gzfm1">
+				Gzfm1 = #{gzfm1},
+			</if>
+			<if test="gfyt!=null and ''!=gfyt">
+				Gfyt = #{gfyt},
+			</if>
+			<if test="mainMediaName!=null and ''!=mainMediaName">
+				MainMediaName = #{mainMediaName},
+			</if>
+			<if test="subMediaName!=null and ''!=subMediaName">
+				SubMediaName = #{subMediaName},
+			</if>
+			<if test="competitor!=null and ''!=competitor">
+				Competitor = #{competitor},
+			</if>
+			<if test="dfNum!=null and ''!=dfNum">
+				DfNum = #{dfNum},
+			</if>
+			<if test="gfys!=null and ''!=gfys">
+				Gfys = #{gfys},
+			</if>
+			<if test="closedOn!=null and ''!=closedOn">
+				ClosedOn = #{closedOn},
+			</if>
+			<if test="topic!=null and ''!=topic">
+				Topic = #{topic},
+			</if>
+			<!-- <if test="estCloseDate !=null and ''!= estCloseDate"> -->
+			<if test="estCloseDate !=null">
+				estclosedate = #{estCloseDate},
+			</if>
+			<if test="statusReason !=null and ''!=statusReason">
+				statusReason = #{statusReason},
+			</if>
+			<if test="description !=null and ''!=description ">
+				description =description+ #{description}
+			</if>
+			<!-- 2016.4.3 编辑时置为无效 -->
+		</set>
+		where OppGUID = #{oppGuid}
+		</if>
+	</update>
+	<!--跟新客户机会对应房间的信息  -->
+	<update id="updateXsOpp2RoomInfoDao" parameterType="com.zs.crm.entity.tableStructure.XsOpp2RoomTableEntity">
+		<if test="(yxFangXing!=null and ''!=yxFangXing) or (yxArea!=null and ''!=yxArea)">
+		update s_Opp2Room
+		<set>
+			<if test="yxFangXing!=null and ''!=yxFangXing">
+				YxFangXing = #{yxFangXing},
+			</if>
+			<if test="yxArea!=null and ''!=yxArea">
+				YxArea = #{yxArea}
+			</if>
+		</set>
+		where OppGUID = #{oppGuid}
+		</if>
+	</update>
+	<!--插入客户的跟进信息  -->
+	<insert id="insertXsCstFollowInfoDao" parameterType="com.zs.crm.entity.tableStructure.XsOpp2GjjlTableEntity">
+<!-- 		declare @status varchar(100)
+SELECT @status=status FROM [dbo].[s_Opportunity] WHERE oppguid='FF0BFC95-F823-4831-AC83-00018E28A325';
+PRINT @oppsource
+if @status='看房'
+begin
+PRINT @status
+end
+else if @status='问询'
+begin
+SELECT oppsource FROM [dbo].[s_Opportunity] WHERE oppguid='FF0BFC95-F823-4831-AC83-00018E28A325';
+end -->
+		declare @guid nvarchar(50),@zygw nvarchar(50),@status varchar(100)
+		set @guid = newID()
+		insert into s_Opp2Gjjl (GjjlGUID,OppGUID,Status,Gfyx,GjDate,GjrGUID,Gjfs,Gjxw,GjContent,NextDate,NextContent,
+			Remark)
+		values(@guid,#{oppGuid},#{gjStatus},#{gfyx},#{gjDate},#{gjrGuid},#{gjfs},#{gjxw},#{gjContent},#{nextDate},
+			#{nextContent},#{remark})
+			
+		select @zygw=userName from zs_rbac_user_ext where value=#{gjrGuid}
+		SELECT @status=status FROM [dbo].[s_Opportunity] WHERE oppguid=#{oppGuid};
+		update s_Opportunity 
+		<set>
+				LastGjjlGUID=@guid, fpr='0',
+			<if test="nextDate!=null and ''!=nextDate">
+				NextDate=#{nextDate},
+			</if>
+			<if test="gjDate!=null and'' !=gjDate">
+				LastDate=#{gjDate},
+			</if>
+			 <if test="status!=null and '' !=status">
+				Status=#{status},
+			</if>
+			<if test="gfyx!=null and '' !=gfyx">
+				Gfyx=#{gfyx},
+			</if>
+			<if test="gjrGuid!=null and ''!=gjrGuid">
+				UserGUID=#{gjrGuid} , Zygw=@zygw
+			</if> 
+			<!-- <if test="@status !='看房'">
+				Status=#{status}
+			</if> -->
+		</set>
+		where OppGUID=#{oppGuid}
+		
+		IF NOT EXISTS(SELECT 1 FROM s_scrmdata_gjjl WHERE gjjlguid=@guid ) 
+		BEGIN 
+   			INSERT INTO s_scrmdata_gjjl(gjjlguid)VALUES(@guid); 
+		END;
+	</insert>
+	<select id="getStatusFlgFromOppOrtunity" parameterType="com.zs.crm.entity.tableStructure.XsOppTableEntity" resultType="com.zs.crm.entity.tableStructure.XsOppTableEntity">
+		SELECT status FROM [dbo].[s_Opportunity] WHERE oppguid=#{oppGuid};
+	</select>
+	<!--查询置业顾问基本信息  -->
+	<select id="getXsEmployeeInfoDao" parameterType="com.zs.crm.entity.tableStructure.XsEmployeeTableEntity" resultType="com.zs.crm.entity.tableStructure.XsEmployeeTableEntity">
+		select UserName as userName,UserGUID as userGuid from myUser
+		<where>
+			<if test="userName!=null and ''!=userName">
+				UserName = #{userName}
+			</if>
+		</where>
+	</select>
+	<select id="getXsCstBasicInfoDao" parameterType="com.zs.crm.entity.tableStructure.XsCstTableEntity" resultType="com.zs.crm.entity.tableStructure.XsCstTableEntity">
+		select CstGUID as cstGuid,MobileTel as mobileTel,OfficeTel as officeTel,HomeTel as homeTel,Fax as fax from p_Customer
+		<where>
+			1 = 1
+			<if test="cstName!=null and ''!=cstName">
+				and CstName = #{cstName}
+			</if>
+			<if test="mobileTel!=null and ''!=mobileTel">
+				and (MobileTel = #{mobileTel} or OfficeTel = #{mobileTel} or HomeTel = #{mobileTel} or Fax = #{mobileTel})
+			</if>
+			<if test="cstGuid!=null and ''!=cstGuid">
+				and CstGUID = #{cstGuid}
+			</if>
+		</where>
+	</select>
+	<select id="getXsOppInfoDao" parameterType="com.zs.crm.entity.tableStructure.XsOppTableEntity" resultType="com.zs.crm.entity.tableStructure.XsOppTableEntity">
+		select OppGUID as oppGuid from s_Opportunity where CstGUID=#{cstGuid} and CreatedBy=#{createdBy}
+	</select>
+	
+	<insert id="insertXsCstAllInfoDao" parameterType="com.zs.crm.entity.XsCstInfo">
+		declare @cstGuid nvarchar(50),@attachGuid nvarchar(50),@oppGuid nvarchar(50),@opp2CstGuid nvarchar(50),@rowGuid nvarchar(50),@gjjlGuid nvarchar(50)
+		set @cstGuid=newID()
+		set @attachGuid=newID()
+		set @oppGuid=newID()
+		set @opp2CstGuid=newID()
+		set @rowGuid=newID()
+		set @gjjlGuid=newID()
+		
+		insert into p_Customer (CstGUID,FirstName,LastName,CstName,OfficeTel,HomeTel,Email,MobileTel,CstType,Gender,Fax,
+			ModifyOn,ModifyBy,IsReceiveSMS,CreatedOn,CreatedBy,CreatedByGUID,Description,CardID) 
+		values(@cstGuid,#{xsCst.firstName},#{xsCst.lastName},#{xsCst.cstName},#{xsCst.officeTel},#{xsCst.homeTel},#{xsCst.email},#{xsCst.mobileTel},#{xsCst.cstType},#{xsCst.gender},
+			#{xsCst.fax},#{xsCst.modifyOn},#{xsCst.modifyBy},#{xsCst.isReceiveSms},#{xsCst.createdOn},#{xsCst.createdBy},#{xsCst.createdByGuid},#{xsCst.description},#{xsCst.cardId})
+	
+		insert into p_CstAttribute (CstGUID,WorkArea,HomeArea,EduLevel,Family,Work,BuyersUse,FromArea,Jzyt,ZnNum,ZyNum,
+			HaveBM,IsMainJcz,Lxfs,AgeGroup,Marriage) 
+		values(@cstGuid,#{xsCstAttr.workArea},#{xsCstAttr.homeArea},#{xsCstAttr.eduLevel},#{xsCstAttr.family},#{xsCstAttr.work},#{xsCstAttr.buyersUse},#{xsCstAttr.fromArea},#{xsCstAttr.jzyt},#{xsCstAttr.znNum},
+			#{xsCstAttr.zyNum},#{xsCstAttr.haveBm},#{xsCstAttr.isMainJcz},#{xsCstAttr.lxfs},#{xsCstAttr.ageGroup},#{xsCstAttr.marriage}) 
+	
+		insert into p_CstAttach (CstAttachGUID,BUGUID,CstGUID,ProjGUID,UserGUID) 
+		values(@attachGuid,#{xsCstAttach.buGuid},@cstGuid,#{xsCstAttach.projGuid},#{xsCstAttach.userGuid}) 
+	
+		insert into s_Opportunity (OppGUID,BUGUID,ProjGUID,OppSource,CstGUID,Status,CreatedOn,CreatedBy,CreatedByGUID,IsCreatorUse,
+			Competitor,ModifyOn,ModifyBy,MainMediaName,SubMediaName,Gfys,Gfyt,Xqts,Gzqs,Gzjg,Gzfm1,Gzfm2,Gzfm3,UserGUID,
+			LastDate,NextDate,NextContent,Gfyx,DfNum,FpNum,FirstGfyx,Zygw)
+		values(@oppGuid,#{xsOpp.buGuid},#{xsOpp.projGuid},#{xsOpp.oppSource},@cstGuid,#{xsOpp.status},#{xsOpp.createdOn},#{xsOpp.createdBy},
+			#{xsOpp.createdByGuid},#{xsOpp.isCreatorUse},#{xsOpp.competitor},#{xsOpp.modifyOn},#{xsOpp.modifyBy},#{xsOpp.mainMediaName},#{xsOpp.subMediaName},
+			#{xsOpp.gfys},#{xsOpp.gfyt},#{xsOpp.xqts},#{xsOpp.gzqs},#{xsOpp.gzjg},#{xsOpp.gzfm1},#{xsOpp.gzfm2},#{xsOpp.gzfm3},#{xsOpp.userGuid},#{xsOpp.lastDate},#{xsOpp.nextDate},
+			#{xsOpp.nextContent},#{xsOpp.gfyx},#{xsOpp.dfNum},#{xsOpp.fpNum},#{xsOpp.firstGfyx},#{xsOpp.zygw}) 
+
+		insert into s_Opp2Cst (Opp2CstGUID,OppGUID,CstGUID,CstNum) 
+		values (@opp2CstGuid,@oppGuid,@cstGuid,#{xsOpp2Cst.cstNum})	
+	
+		delete from s_Opp2Room where oppguid =@oppGuid
+		insert into s_Opp2Room (RowGUID,YxYeTai,YxFangXing,YxArea,OppGUID,Num) 
+		values (@rowGuid,#{xsOpp2Room.yxYeTai},#{xsOpp2Room.yxFangXing},#{xsOpp2Room.yxArea},@oppGuid,#{xsOpp2Room.num})
+
+		insert into s_Opp2Gjjl (GjjlGUID,OppGUID,Status,Gfyx,GjDate,GjrGUID,Gjfs,Gjxw,GjContent,NextDate,NextContent,
+			Remark)
+		values(@gjjlGuid,@oppGuid,#{xsOpp2Gjjl.status},#{xsOpp2Gjjl.gfyx},#{xsOpp2Gjjl.gjDate},#{xsOpp2Gjjl.gjrGuid},#{xsOpp2Gjjl.gjfs},#{xsOpp2Gjjl.gjxw},#{xsOpp2Gjjl.gjContent},#{xsOpp2Gjjl.nextDate},
+			#{xsOpp2Gjjl.nextContent},#{xsOpp2Gjjl.remark})
+		update s_Opportunity set LastGjjlGUID=@gjjlGuid,LastDate=#{xsOpp2Gjjl.gjDate},NextDate=#{xsOpp2Gjjl.nextDate} where OppGUID=@oppGuid
+		
+		IF NOT EXISTS(SELECT 1 FROM s_scrmdata_gjjl WHERE gjjlguid=@gjjlGuid ) 
+		BEGIN 
+   			INSERT INTO s_scrmdata_gjjl(gjjlguid)VALUES(@gjjlGuid); 
+		END;
+	</insert>
+	<insert id="updateXsCstAndInsertOtherInfoDao" parameterType="com.zs.crm.entity.XsCstInfo">
+		declare @attachGuid nvarchar(50),@oppGuid nvarchar(50),@opp2CstGuid nvarchar(50),@rowGuid nvarchar(50),@gjjlGuid nvarchar(50)
+		set @attachGuid=newID()
+		set @oppGuid=newID()
+		set @opp2CstGuid=newID()
+		set @rowGuid=newID()
+		set @gjjlGuid=newID()
+		<if test="(xsCst.cstName!=null and ''!=xsCst.cstName) or (xsCst.mobileTel!=null and ''!=xsCst.mobileTel) or (xsCst.gender!=null and ''!=xsCst.gender) or (xsCst.cardId!=null and ''!=xsCst.cardId) or (xsCst.homeTel!=null and ''!=xsCst.homeTel) or (xsCst.officeTel!=null and ''!=xsCst.officeTel) or (xsCst.fax!=null and ''!=xsCst.fax)">
+		update p_Customer
+		<set>
+			<if test="xsCst.cstName!=null and ''!=xsCst.cstName">
+				CstName = #{xsCst.cstName},
+			</if>
+			<if test="xsCst.mobileTel!=null and ''!=xsCst.mobileTel">
+				MobileTel = #{xsCst.mobileTel},
+			</if>
+			<if test="xsCst.gender!=null and ''!=xsCst.gender">
+				Gender = #{xsCst.gender},
+			</if>
+			<if test="xsCst.cardId!=null and ''!=xsCst.cardId">
+				CardId = #{xsCst.cardId},
+			</if>
+			<if test="xsCst.description!=null and ''!=xsCst.description">
+				Description = #{xsCst.description},
+			</if>
+			<if test="xsCst.homeTel!=null and ''!=xsCst.homeTel">
+				HomeTel = #{xsCst.homeTel},
+			</if>
+			<if test="xsCst.officeTel!=null and ''!=xsCst.officeTel">
+				OfficeTel = #{xsCst.officeTel},
+			</if>
+			<if test="xsCst.fax!=null and ''!=xsCst.fax">
+				Fax = #{xsCst.fax}
+			</if>	
+		</set>
+		where CstGUID = #{xsCst.cstGuid}
+		</if>
+		IF NOT EXISTS(SELECT 1 FROM p_CstAttribute WHERE CstGUID=#{xsCst.cstGuid} ) 
+		BEGIN 
+   			insert into p_CstAttribute (CstGUID,WorkArea,HomeArea,EduLevel,Family,Work,BuyersUse,FromArea,Jzyt,ZnNum,ZyNum,
+			HaveBM,IsMainJcz,Lxfs,AgeGroup,Marriage) 
+			values(#{xsCst.cstGuid},#{xsCstAttr.workArea},#{xsCstAttr.homeArea},#{xsCstAttr.eduLevel},#{xsCstAttr.family},#{xsCstAttr.work},#{xsCstAttr.buyersUse},#{xsCstAttr.fromArea},#{xsCstAttr.jzyt},#{xsCstAttr.znNum},
+			#{xsCstAttr.zyNum},#{xsCstAttr.haveBm},#{xsCstAttr.isMainJcz},#{xsCstAttr.lxfs},#{xsCstAttr.ageGroup},#{xsCstAttr.marriage}) 
+		END
+		ELSE
+		BEGIN
+			<if test="(xsCstAttr.ageGroup!=null and ''!=xsCstAttr.ageGroup) or (xsCstAttr.homeArea!=null and ''!=xsCstAttr.homeArea) or (xsCstAttr.workArea!=null and ''!=xsCstAttr.workArea) or (xsCstAttr.family!=null and ''!=xsCstAttr.family) or (xsCstAttr.zyNum!=null and ''!=xsCstAttr.zyNum) or (xsCstAttr.buyersUse!=null and ''!=xsCstAttr.buyersUse)">
+			update p_CstAttribute
+			<set>
+				<if test="xsCstAttr.ageGroup!=null and ''!=xsCstAttr.ageGroup">
+					AgeGroup = #{xsCstAttr.ageGroup},
+				</if>
+				<if test="xsCstAttr.homeArea!=null and ''!=xsCstAttr.homeArea">
+					HomeArea = #{xsCstAttr.homeArea},
+				</if>
+				<if test="xsCstAttr.workArea!=null and ''!=xsCstAttr.workArea">
+					WorkArea = #{xsCstAttr.workArea},
+				</if>
+				<if test="xsCstAttr.work!=null and''!=xsCstAttr.work">
+					Work = #{xsCstAttr.work},
+				</if>
+				<if test="xsCstAttr.family!=null and ''!=xsCstAttr.family">
+					Family = #{xsCstAttr.family},
+				</if>
+				<if test="xsCstAttr.zyNum!=null and ''!=xsCstAttr.zyNum">
+					ZyNum = #{xsCstAttr.zyNum},
+				</if>
+				<if test="xsCstAttr.buyersUse!=null and ''!=xsCstAttr.buyersUse">
+					BuyersUse = #{xsCstAttr.buyersUse}
+				</if>
+			</set>
+			where CstGUID = #{xsCst.cstGuid}
+		</if>
+		END
+		IF NOT EXISTS(SELECT 1 FROM p_CstAttach WHERE CstGUID=#{xsCst.cstGuid} and ProjGUID=#{xsCstAttach.projGuid} and UserGUID=#{xsCstAttach.userGuid}) 
+		BEGIN 
+			insert into p_CstAttach (CstAttachGUID,BUGUID,CstGUID,ProjGUID,UserGUID) 
+			values(@attachGuid,#{xsCstAttach.buGuid},#{xsCst.cstGuid},#{xsCstAttach.projGuid},#{xsCstAttach.userGuid}) 
+		END
+	
+		insert into s_Opportunity (OppGUID,BUGUID,ProjGUID,OppSource,CstGUID,Status,CreatedOn,CreatedBy,CreatedByGUID,IsCreatorUse,
+			Competitor,ModifyOn,ModifyBy,MainMediaName,SubMediaName,Gfys,Gfyt,Xqts,Gzqs,Gzjg,Gzfm1,Gzfm2,Gzfm3,UserGUID,
+			LastDate,NextDate,NextContent,Gfyx,DfNum,FpNum,FirstGfyx,Zygw)
+		values(@oppGuid,#{xsOpp.buGuid},#{xsOpp.projGuid},#{xsOpp.oppSource},#{xsCst.cstGuid},#{xsOpp.status},#{xsOpp.createdOn},#{xsOpp.createdBy},
+			#{xsOpp.createdByGuid},#{xsOpp.isCreatorUse},#{xsOpp.competitor},#{xsOpp.modifyOn},#{xsOpp.modifyBy},#{xsOpp.mainMediaName},#{xsOpp.subMediaName},
+			#{xsOpp.gfys},#{xsOpp.gfyt},#{xsOpp.xqts},#{xsOpp.gzqs},#{xsOpp.gzjg},#{xsOpp.gzfm1},#{xsOpp.gzfm2},#{xsOpp.gzfm3},#{xsOpp.userGuid},#{xsOpp.lastDate},#{xsOpp.nextDate},
+			#{xsOpp.nextContent},#{xsOpp.gfyx},#{xsOpp.dfNum},#{xsOpp.fpNum},#{xsOpp.firstGfyx},#{xsOpp.zygw}) 
+
+		insert into s_Opp2Cst (Opp2CstGUID,OppGUID,CstGUID,CstNum) 
+		values (@opp2CstGuid,@oppGuid,#{xsCst.cstGuid},#{xsOpp2Cst.cstNum})	
+	
+		delete from s_Opp2Room where oppguid =@oppGuid
+		insert into s_Opp2Room (RowGUID,YxYeTai,YxFangXing,YxArea,OppGUID,Num) 
+		values (@rowGuid,#{xsOpp2Room.yxYeTai},#{xsOpp2Room.yxFangXing},#{xsOpp2Room.yxArea},@oppGuid,#{xsOpp2Room.num})
+
+		insert into s_Opp2Gjjl (GjjlGUID,OppGUID,Status,Gfyx,GjDate,GjrGUID,Gjfs,Gjxw,GjContent,NextDate,NextContent,
+			Remark)
+		values(@gjjlGuid,@oppGuid,#{xsOpp2Gjjl.status},#{xsOpp2Gjjl.gfyx},#{xsOpp2Gjjl.gjDate},#{xsOpp2Gjjl.gjrGuid},#{xsOpp2Gjjl.gjfs},#{xsOpp2Gjjl.gjxw},#{xsOpp2Gjjl.gjContent},#{xsOpp2Gjjl.nextDate},
+			#{xsOpp2Gjjl.nextContent},#{xsOpp2Gjjl.remark})
+		update s_Opportunity set LastGjjlGUID=@gjjlGuid,LastDate=#{xsOpp2Gjjl.gjDate},NextDate=#{xsOpp2Gjjl.nextDate} where OppGUID=@oppGuid
+		
+		IF NOT EXISTS(SELECT 1 FROM s_scrmdata_gjjl WHERE gjjlguid=@gjjlGuid ) 
+		BEGIN 
+   			INSERT INTO s_scrmdata_gjjl(gjjlguid)VALUES(@gjjlGuid); 
+		END;
+	</insert>
+	
+	<select id="checkCusBeFollowedByEmployeeDao"  resultType="String">
+  		select 名称 as selectName   from dbo.zs_词典 where 类别='公共客户是否允许销售员直接跟进'
+	</select>
+	 <select id="getTel_allCustomer" resultType="java.util.HashMap">
+ 		select mobileTel  FROM [dbo].[p_Customer]  WHERE MobileTel !='';
+ 	</select>
+ 	
+ 	<select id="getXsCstInfoByCstGuidAndProjGuidDao" parameterType="com.zs.crm.entity.XsCstSearchOption" resultMap="XsCstResult">
+ 		select * from s_opportunity a left join p_customer b on a.CstGUID = b.CstGUID where a.CstGUID = #{cstGuid} and a.ProjGUID = #{projGUID} 
+ 		and not exists (select 1 from s_opportunity where CstGUID= b.CstGUID AND scrm_timestamp_data > a.scrm_timestamp_data and ProjGUID = #{projGUID})
+ 	</select>
+ </mapper>

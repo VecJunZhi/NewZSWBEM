@@ -1,0 +1,293 @@
+#wrapper{
+    overflow: hidden;
+    width: 100%;
+}
+.menu-panel {
+    width:100%;
+    background:#F8F8F8;
+    position:fixed;
+    z-index:999;
+    top: 0;
+}
+.menu-panel ul{
+    display: -webkit-box;
+    padding:11px 0;
+}
+.menu-panel .change{
+    position:relative;
+    -webkit-box-flex: 3;
+}
+.menu-panel .search{
+    position:relative;
+    min-width: 85px;
+    -webkit-box-flex: 1;
+}
+.menu-panel .tuipan{
+    position:relative;
+    min-width: 85px;
+    -webkit-box-flex: 1;
+}
+.menu-panel li i{
+    height: 22px;
+    width: 18px;
+    display: inline-block;
+    margin: 0 10px;
+}
+.menu-panel span{
+    font-size: 16px;
+    display: inline;
+    vertical-align: super;
+}
+.menu-panel .change .choose-building-next{
+    margin: 0 5px;
+    color: #34CCA6;
+    vertical-align: super;
+    position: absolute;
+    right: 0;
+    top: 3px;
+}
+.menu-panel .change{
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border-right:1px solid #d7d7d7;
+    padding-right: 15px;
+}
+.menu-panel .change i{
+    background: url("/mbem/mcrm/house/images/floor.png") no-repeat center center;
+    background-size:18px 22px;
+}
+.menu-panel .search i{
+    background: url("/mbem/mcrm/house/images/search-icon.png") no-repeat center center;
+    background-size:20px;
+}
+.menu-panel .tuipan{
+    border-left:1px solid #d7d7d7;
+}
+.menu-panel .tuipan i{
+    background: url("/mbem/mcrm/house/images/tuipan.png") no-repeat center center;
+    background-size:18px;
+}
+
+.unit-short{
+    display: block;
+    font-size: 0;
+}
+.unit-warp{
+    position: relative;
+    /*padding: 0 10px;*/
+}
+.unit-hidden{
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    width: 64px;
+}
+.unit-btn{
+    display: inline-block;
+    min-width: 55px;
+    /*max-width: 55px;*/
+    text-align: center;
+    font-size: 16px;
+    background-color: #E5E5E5;
+    padding: 5px 0;
+    border-radius: 4px;
+    margin: 10px 8px 0 8px;
+}
+.unit-btn.checked{
+    background-color: #34cca6;
+    color: #FFFFFF;
+}
+.unit-btn.more{
+    display: none;
+}
+.more-popup{
+    display: none;
+    width: 100%;
+    position: absolute;
+    font-size: 0;
+    left: 0;
+    top: 80px;
+    z-index: 100;
+    background: #D5D5D5;
+    padding-bottom: 10px;
+    margin-top: 10px
+}
+.more-popup:after {
+    border-width: 9px;
+    border-top-color: #fcfcfc;
+    margin-left: -9px;
+}
+
+.more-popup:before {
+    border-width: 10px;
+    border-top-color: #e0e0e0;
+    margin-left: -10px;
+}
+.floor-warp{
+    position: relative;
+    z-index: 100;
+    background-color: #f0f0f0;
+    padding-left: 5px;
+}
+.floor-title{
+    padding-left: 31px;
+    padding-top: 10px;
+    color: #9C9C9C;
+}
+.floor-title p{
+    margin: 0;
+    background: #E5E5E5;
+    padding: 5px 0;
+    text-align: center;
+}
+.floor{
+    background-color: #fff;
+    width: 26px;
+    color: #333;
+    font-weight: normal;
+    text-align: center;
+    vertical-align: top;
+}
+.floor span{
+    border-top: 1px solid #F2F2F3;
+    display: block;
+}
+.floor span:after{
+    content: "";
+    width: 26px;
+    height: 20px;
+    display: block;
+    background-image: url(/mbem/mcrm/house/images/floorx.png);
+    background-size: 26px 20px;
+    background-position: center top;
+    background-repeat: no-repeat;
+}
+
+.building-floor-wrap{
+    position: relative;
+}
+
+.building-floor-num{
+    position: absolute;
+    width: 24px;
+    background-color: #f0f0f0;
+    /*height: 1103px;*/
+    z-index: 99;
+    padding-left: 5px;
+    top: 0;
+    /*left: 31px;*/
+    transform-origin: top;
+}
+.building-floor-num .floor-head{
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    float: left;
+    padding-top: 3px;
+    /*padding-bottom: 5px;*/
+
+    background-color: #fff;
+    line-height: 40px;
+    width: 26px;
+    text-align: center;
+    border-top: 1px dotted #ededed;
+    box-sizing: border-box;
+    height: 45px;
+}
+.roomtable .floor-head{
+    position: absolute;
+    z-index: 99;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    /*margin-top: 5px;*/
+    background-color: #fff;
+    line-height: 40px;
+    width: 26px;
+    text-align: center;
+    border-top: 1px dotted #ededed;
+    height: 41px;
+    padding-top: 3px;
+    /*box-sizing: border-box;*/
+}
+
+.roomlisttable-zoom{
+    display: none;
+    /*padding-top: 41px;*/
+}
+
+.roomlisttable{
+    /*max-height: 258px;*/
+    padding-left: 5px;
+}
+
+
+.roomtable{
+    max-width:758px;
+    border:none;
+}
+.room_floor li{
+    border:none;
+    width: auto ;
+    /*padding: 0 3px;*/
+}
+.roomtable ul{
+    overflow: scroll;
+}
+.roomtable ul li{
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin:5px 0 0 5px;
+    background-color:#fff;
+    width: 56px;
+}
+.floor-ul{border-left: 26px solid #fff;}
+
+
+.roomtemplt{position: relative;z-index: 100;background-color: #f0f0f0;padding-left: 5px;padding-right: 5px;padding-bottom: 0px;}
+.roomtemplt ul{
+    padding:0;
+    font-size: 0;
+    height: auto;
+}
+.roomtemplt ul li{
+    float:none;
+    color: #9a9a9a;
+    width: 40%;
+    display: inline-block;
+    -webkit-box-sizing: border-box;
+}
+.roomtemplt ul i{position:static;width:12px;height:12px;border:none;vertical-align: sub;}
+.roomtemplt ul .sold_yes i{background-color:#F15555}
+.roomtemplt ul .sold_no i{background-color:#fff}
+.roomtemplt ul .sold_yn i{background-color:#FFCB30}
+.roomtemplt ul .sold_wfp i{background-color:#BEBEBE}
+/*.roomtemplt ul .sold_no,.roomtemplt ul .sold_wfp{margin-left: 10px;}*/
+.roomtemplt ul li .text{font-size:11px;text-align:left;padding:0 4px;}
+.roomtemplt ul li .lit{font-size:11px;margin:0;text-align:center;white-space:nowrap;}
+.roomtemplt ul .sold_yes .num span{color:#f35656;}
+.roomtemplt ul li .num span{margin:0;font-size:11px;color:#bbb;padding-right:2px;}
+.roomtemplt ul li .num{font-size:11px;text-align:center;}
+.roomtemplt ul span span{margin: 0 5px 0 0;}
+
+.fag{position: absolute;
+    width: 26px;
+    height: 14px;
+    right: 10px;;
+    top: -10px;
+    z-index: 1;}
+.fag:after{ position: absolute;
+    left: -33px;
+    top: 0px;
+    content: ".";
+    font-size: 0;
+    line-height: 0;
+    width: 1px;
+    height: 1px;
+    border: 13px solid #D5D5D5;
+    border-top-width: 0;
+    border-color: #D5D5D5 transparent;
+    z-index: 2;}

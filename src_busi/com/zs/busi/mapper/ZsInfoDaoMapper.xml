@@ -1,0 +1,674 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper  namespace="com.zs.busi.dao.ZsInfoDao">
+ 
+ <sql id="zsbasicInfo">
+ select a.id,a.客户id as cusId,a.客户名称 as cusName,a.客户编号 as cusNo,a.公司标志 as compSymbol,a.法人代表 as legalPerson,a.地址市 as addr,
+       			a.地址区 as addrArea,a.地址路 as addrRoad,a.联系人 as person,a.联系电话 as tel,a.传真号码 as faxNo,a.邮政编码 as zipCode,
+       			a.开户银行 as accountBank,a.银行帐号 as accountNo,a.性别 as sex,a.出生年月 as birthday,a.Email as email,a.主页地址 as homePage,
+       			a.户口所在地 as residenceAddr,a.证件名称 as idName, a.身份证号码 as idNo, a.工作单位 as workComp, a.附加说明   as appendInfo,
+       			a.身份  as identitys, a.国籍  as nationality, a.类别 as classes, a.级别id as levelId, a.客户描述 as cusDesp, a.年龄 as age, a.客户简称 as cusAbb,
+       			a.手机号码 as phoneNo, a.月收入 as monthIncome, a.年收入 as yearIncome, a.初次到访方式 as firstVisWay, a.总帐编码 as accountCode,
+       			a.总帐科目名称 as accountName, a.已收会费 as vipFee, a.收款单编号 as billNo, a.卡号 as cardNo, a.跟进方式 as followWay,
+       			a.下次跟进时间 as nextFollowDate, a.意向类别 as intentionType, a.购房用途 as houstUse, a.关注因素 as factor, a.工作行业 as workType,
+       			a.来访次数 as visitTimes, a.家庭结构 as familyInfo, a.招商业态 as investmentInfo, a.标签  as label,  a.意向面积  as intentionArea, a.置业次数  as buyTimes,  a.竞争对手  as competitor,
+				a.意向价格  as intentionPrice,  a.意向产品  as intentionProduct, a.意向房型   as intentionRoom
+ </sql>
+ <sql id="AutoNextFollowDate">
+	declare @followDays int,@nextday varchar(100);
+	select @followDays=名称 from dbo.zs_词典   where 类别='招商下次跟进间隔天数';
+	select @nextday=CONVERT(varchar(100),dateadd(day,@followDays,CONVERT(varchar(100), GETDATE(), 20)),20)
+	select CONVERT(varchar(100),dateadd(day,@followDays,CONVERT(varchar(100), GETDATE(), 20)),20) as nextFollowDay
+ </sql>
+  <sql id="xs_AutoNextFollowDate">
+	declare @followDays int,@nextday varchar(100);
+	select @followDays=名称 from dbo.zs_词典   where 类别='下次跟进间隔天数';
+	select @nextday=CONVERT(varchar(100),dateadd(day,@followDays,CONVERT(varchar(100), GETDATE(), 20)),20)
+	select CONVERT(varchar(100),dateadd(day,@followDays,CONVERT(varchar(100), GETDATE(), 20)),20) as nextFollowDay
+ </sql>
+ <!-- 获得招商基本信息和最新的跟进信息 -->
+ <select id="getZsBasicInfoAndLastFollowingByCusId" parameterType="com.zs.busi.entity.ZsInfoVo" resultType="com.zs.busi.entity.ZsInfoVo">
+ 	<if test="cusId != null">
+	 	<include refid="zsbasicInfo"/>, b.跟进人id as followPersionId,b.跟进日期 as followDate,b.跟进方式  as followWayEach,b.跟进内容 as followInfo  from dbo.zs_客户 a,dbo.zs_客户跟进记录 b where a.客户id=b.客户id and a.客户id=#{cusId} and b.跟进日期=a.最近跟进日期;
+	</if>
+ </select>
+ 
+ <select id="getZsCustomCountDao" parameterType="com.zs.busi.entity.ZsInfoVo" resultType="Integer">
+ 	select count(a.客户id) from dbo.zs_客户 a,dbo.zs_客户意向条件 b where a.客户id=b.客户id and b.接待人id=#{employeeId} and b.项目id=#{progGuid}
+ 		<if test="cusName!=null and ''!=cusName">
+ 			and a.客户名称 like '%${cusName}%'
+ 		</if>
+ 		<if test="tel!=null and ''!=tel">
+ 			and a.联系电话 like '%${tel}%'
+ 		</if>
+ 		<if test="intentionType">
+ 			and a.意向类别 in (${intentionType})
+ 		</if>
+ 		<if test="customStatus!=null and ''!=customStatus">
+ 			and a.客户状态 in (${customStatus})
+ 		</if>
+ 		<if test="age!=null and ''!=age">
+ 			and a.年龄  in (${age})
+ 		</if>
+ 		<if test="followWay!=null and ''!=folllowWay">
+ 			and a.跟进方式 in (${followWay})
+ 		</if>
+ 		<if test="firstVisWay!=null and ''!=firstVisWay">
+ 			and a.初次到访方式  in (${firstVisWay})
+ 		</if>
+ 		<if test="investmentInfo!=null and ''!=investmentInfo">
+ 			<!-- and a.招商业态 in (${investmentInfo}) -->
+ 			and (${investmentInfo})
+ 		</if>
+ 		<if test="intentionArea!=null and ''!=intentionArea">
+ 			<!-- and a.意向面积 in (${intentionArea}) -->
+ 			and (${intentionArea})
+ 		</if>
+ </select>
+ <select id="getZsCustomListInfoDao" parameterType="com.zs.busi.entity.ZsInfoVo" resultType="com.zs.busi.entity.ZsInfoVo">
+	select a.客户id as cusId,a.客户名称 as cusName,a.意向类别 as intentionType,a.联系电话 as tel,b.跟进日期 as followDate,b.跟进方式 as followWayEach,跟进内容  as followInfo  
+	into #temp from dbo.zs_客户 a,dbo.zs_客户跟进记录 b,zs_客户意向条件 c where a.客户id = c.客户id and a.客户id = b.客户id and c.接待人id = #{employeeId} and b.跟进日期 = a.最近跟进日期 
+	and c.接待人id = b.跟进人id
+	and c.项目id=#{progGuid}
+	<if test="cusName!=null and ''!=cusName">
+	 	and a.客户名称 like '%${cusName}%'
+	 </if> 
+	 <if test="tel!=null and ''!=tel">
+		and a.联系电话  like '%${tel}%'
+	</if>
+	<if test="intentionType">
+		and a.意向类别 in (${intentionType})
+	</if>
+	<if test="customStatus!=null and ''!=customStatus">
+		and a.客户状态 in (${customStatus})
+	</if>
+	<if test="age!=null and ''!=age">
+		and a.年龄  in (${age})
+	</if>
+	<if test="followWay!=null and ''!=folllowWay">
+		and a.跟进方式 in (${followWay})
+	</if>
+	<if test="firstVisWay!=null and ''!=firstVisWay">
+		and a.初次到访方式  in (${firstVisWay})
+	</if>
+	<if test="investmentInfo!=null and ''!=investmentInfo">
+		<!-- and a.招商业态 in (${investmentInfo}) -->
+		and (${investmentInfo})
+	</if>
+	<if test="intentionArea!=null and ''!=intentionArea">
+		<!-- and a.意向面积 in (${intentionArea}) -->
+		and (${intentionArea})
+	</if>
+	order by b.跟进日期 desc,a.客户id desc
+
+	select * from #temp where cusId in(select top ${length} cusId from #temp where cusId not in (select top ${startIndex} cusId from #temp))
+
+	drop table #temp
+	
+ </select>
+ 
+ <select id="getZsBasicInfoDao" parameterType="com.zs.busi.entity.ZsInfoVo" resultType="com.zs.busi.entity.ZsCustomTableVo">
+       select a.id,a.客户id as cusId,a.客户名称 as cusName,a.客户编号 as cusNo,a.公司标志 as compSymbol,a.法人代表 as legalPerson,a.地址市 as addr,
+       			a.地址区 as addrArea,a.地址路 as addrRoad,a.联系人 as person,a.联系电话 as tel,a.传真号码 as faxNo,a.邮政编码 as zipCode,
+       			a.开户银行 as accountBank,a.银行帐号 as accountNo,a.性别 as sex,a.出生年月 as birthday,a.Email as email,a.主页地址 as homePage,
+       			a.户口所在地 as residenceAddr,a.证件名称 as idName, a.身份证号码 as idNo, a.工作单位 as workComp, a.附加说明   as appendInfo,
+       			a.身份  as identitys, a.国籍  as nationality, a.类别 as classes, a.级别id as levelId, a.客户描述 as cusDesp, a.年龄 as age, a.客户简称 as cusAbb,
+       			a.手机号码 as phoneNo, a.月收入 as monthIncome, a.年收入 as yearIncome, a.初次到访方式 as firstVisWay, a.总帐编码 as accountCode,
+       			a.总帐科目名称 as accountName, a.已收会费 as vipFee, a.收款单编号 as billNo, a.卡号 as cardNo, a.跟进方式 as followWay,
+       			a.下次跟进时间 as nextFollowDate, a.意向类别 as intentionType, a.购房用途 as houseUse, a.关注因素 as factor, a.工作行业 as workType,
+       			a.来访次数 as visitTimes, a.家庭结构 as familyInfo, a.招商业态 as investmentInfo,a.标签  as label,  a.意向面积  as intentionArea, a.置业次数  as buyTimes,  a.竞争对手  as competitor,
+				a.意向价格  as intentionPrice,  a.意向产品  as intentionProduct, a.意向房型   as intentionRoom ,a.是否有效 as valided,a.客户状态  as customStatus from dbo.zs_客户  a
+       <if test="employeeName !=null and ''!=employeeName">
+       		,dbo.zs_客户意向条件 b
+       		<where>
+       			b.接待人id=#{employeeId} and a.客户id=b.客户id and a.下次跟进时间   &lt;&gt;''
+       			<if test="cusName !=null and ''!=cusName">
+	       			and a.客户名称 like '%${cusName}%'
+	       		</if>
+	       		<if test="tel != null and ''!=tel">
+	       			and a.联系电话  like '%${tel}%'
+	       		</if>
+	       		<if test="intentionType != null and ''!=intentionType">
+	       			and a.意向级别  =#{intentionType}
+	       		</if>
+	       		<!-- <if test="tel != null">
+	       			and a.客户状态  =#{}
+	       		</if> -->
+	       		<if test="age != null and ''!=age">
+	       			and a.年龄  =#{age}
+	       		</if>
+	       		<if test="followWay != null and ''!=followWay">
+	       			and a.跟进方式  =#{followWay}
+	       		</if>
+	       		 <if test="firstVisWay != null">
+	       			and a.认知途径  =#{firstVisWay}
+	       		</if> 
+	       		<if test="investmentInfo != null  and ''!=investmentInfo">
+	       			and a.招商业态  =#{investmentInfo}
+	       		</if>
+	       		<!-- <if test="tel != null">
+	       			and a.意向项目  =#{}
+	       		</if> -->
+	       	</where>
+       </if>
+       <if test="employeeName ==null or ''==employeeName">
+	       <where>
+	       		<if test="id != null">
+	       			a.id=#{id}
+	       		</if>
+	       		<if test="cusId != null">
+	       			and a.客户id=#{cusId}
+	       		</if>
+	       		<if test="cusName !=null">
+	       			and a.客户名称=#{cusName}
+	       		</if>
+	       		<if test="tel != null">
+	       			and a.联系电话  =#{tel}
+	       		</if>
+	       		<!-- <if test="nextFollowDate != null">
+	       			and a.下次跟进时间   between #{nextFollowDate}+' 00:00:00'  and  #{nextFollowDate}+' 23:59:59' and 下次跟进时间 not in (select 跟进日期 from dbo.客户跟进记录 where 跟进日期 between '2015-02-01' and '2015-09-09' )
+	       		</if> -->
+	       </where>
+       </if>
+        ORDER BY a.客户id  DESC
+</select>
+<!-- 根据客户id 获得客户创建日期和下次跟进日期 -->
+<select id="getFirstAndNextFollowDateByCusId" parameterType="com.zs.busi.entity.ZsInfoVo" resultType="com.zs.busi.entity.ZsCustomFollowRecordTableVo">
+	SELECT 下次跟进时间 as nextFollowDay, 创建日期  AS followDate from dbo.zs_客户  where 客户id=#{cusId}
+</select>
+
+ <select id="getZsFollowInfoDao" parameterType="com.zs.busi.entity.ZsInfoVo" resultType="com.zs.busi.entity.ZsCustomFollowRecordTableVo">
+        declare @followDays int;
+		select @followDays=名称 from dbo.zs_词典 where 类别='招商下次跟进间隔天数';
+		select a.客户id as cusId,a.跟进人id as followPersonId,a.跟进日期 as followDate,a.跟进方式 as followWay,a.跟进内容  as followInfo,b.UserName  as employeeName ,dateadd(day,@followDays,a.跟进日期)as nextFollowDay from dbo.zs_客户跟进记录 a ,dbo.zs_rbac_user b 
+       <where>
+      			a.跟进人id=b.UserID
+       		<if test="cusId != null">
+       			and a.客户id=#{cusId}
+       		</if>
+       		<if test="cusName != null">
+       			and a.客户id=(select 客户id from dbo.zs_客户   where 客户名称=#{cusName})
+       		</if>
+			<!-- <if test="employeeName !=null and employeeNo !=null" >
+       			and a.跟进人id=(select 员工id from dbo.员工   where 员工姓名=#{employeeName} and 员工编号=#{employeeNo} )
+			</if> 
+       		<if test="employeeName !=null ">
+       			and a.跟进人id=(select 员工id from dbo.员工   where 员工姓名=#{employeeName})
+       		</if>-->
+       		 ORDER BY a.跟进日期  DESC
+       </where> 
+ </select>
+ <!-- 判断客户是否为公共客户和无效客户 -->
+ <select id="checkCusPublicOrInvalid" parameterType="com.zs.busi.entity.ZsInfoVo" resultType="com.zs.busi.entity.ZsEmployeeTableVo">
+ 	select 接待人id as employeeId ,项目id as projectID from dbo.zs_客户意向条件 where 客户id=#{cusId}
+ </select>
+<!--  判断公共客户是否可以被置业顾问直接跟进 -->
+<select id="checkCusBeFollowedByEmployee" parameterType="com.zs.busi.entity.ZsInfoVo" resultType="com.zs.busi.entity.ZsDictionaryTableVo">
+  select 名称 as selectName   from dbo.zs_词典 where 类别='招商公共客户是否允许置业顾问直接跟进'
+</select>
+<select id="checkxs_CusBeFollowedByEmployee" parameterType="com.zs.busi.entity.ZsInfoVo" resultType="com.zs.busi.entity.ZsDictionaryTableVo">
+  select 名称 as selectName   from dbo.zs_词典 where 类别='公共客户是否允许销售员直接跟进'
+</select>
+<!-- 根据客户id获得跟进该客户的置业顾问信息 -->
+<select id="getEmployIdAndNameByCusId" parameterType="com.zs.busi.entity.ZsInfoVo" resultType="com.zs.busi.entity.ZsEmployeeTableVo">
+select  UserName as employeeName ,UserId as employeeId  from zs_rbac_user  where UserID=(select 接待人id from dbo.zs_客户意向条件 where 客户id=#{cusId});
+</select>
+<select id=""></select>
+<!-- 新增客户的基本信息 -->
+ <insert id="insertZsBasicInfoDao" useGeneratedKeys="true" keyProperty="id" parameterType="com.zs.busi.entity.ZsInfoVo" >
+	declare @var varchar(20),@count int;
+	select @count=count(客户id) from dbo.zs_客户
+	if @count=0
+	begin
+	set @var=1;
+	end
+	else
+	begin
+	select @var=max(客户id) from dbo.zs_客户
+	set @var=@var+1;
+	end
+	insert into dbo.zs_客户 (客户id,客户名称,客户编号,公司标志,法人代表,地址市,地址区,地址路,联系人,联系电话,传真号码,邮政编码,开户银行,
+ 						银行帐号,性别,出生年月,Email,主页地址,户口所在地,证件名称,身份证号码,工作单位,附加说明,身份,国籍,类别,
+ 						级别id,客户描述,年龄,客户简称,手机号码,月收入,年收入,初次到访方式,总帐编码,总帐科目名称,已收会费,
+ 						收款单编号,卡号,跟进方式,下次跟进时间,意向类别,购房用途,关注因素,工作行业,来访次数,家庭结构,招商业态,标签,意向面积,置业次数,竞争对手,
+ 						意向价格,意向产品,意向房型,是否有效,最近跟进日期,创建日期,客户状态,是否新分配)
+ 						values (@var,#{cusName},#{cusNo},#{compSymbol},#{legalPerson},#{addr},#{addrArea},#{addrRoad},
+ 						#{person},#{tel},#{faxNo},#{zipCode},#{accountBank},#{accountNo},#{sex},#{birthday},#{email},
+ 						#{homePage},#{residenceAddr},#{idName},#{idNo},#{workComp},#{appendInfo},#{identitys},#{nationality},
+ 						#{classes},#{levelId},#{cusDesp},#{age},#{cusAbb},#{phoneNo},#{monthIncome},#{yearIncome},#{firstVisWay},
+ 						#{accountCode},#{accountName},#{vipFee},#{billNo},#{cardNo},#{followWay},#{nextFollowDate},#{intentionType},
+ 						#{houseUse},#{factor},#{workType},#{visitTimes},#{familyInfo},#{investmentInfo},#{label},#{intentionArea},
+ 						#{buyTimes},#{competitor},#{intentionPrice},#{intentionProduct},#{intentionRoom},#{valided},#{lastFollowDate},#{createDate},#{customStatus},'1');
+ </insert>
+ <insert id="insertIntentionCondition"  parameterType="com.zs.busi.entity.ZsInfoVo">
+    insert into dbo.zs_客户意向条件(客户id,接待人id,创建日期,修改日期,项目id)values(#{cusId},#{employeeId},#{intentionCreateDate},#{intentionModifyDate},#{progGuid});
+ </insert>
+ <!-- 获得自动生成的默认的下次跟进日期 招商-->
+ <select id="getNextFollowDate" resultType="com.zs.busi.entity.ZsCustomFollowRecordTableVo">
+	<include refid="AutoNextFollowDate"></include>
+ </select>
+  <!-- 获得自动生成的默认的下次跟进日期 销售-->
+  <select id="getXS_NextFollowDate" resultType="com.zs.busi.entity.ZsCustomFollowRecordTableVo">
+	<include refid="xs_AutoNextFollowDate"></include>
+ </select>
+ 
+  <insert id="insertZsFollowInfoDao" parameterType="com.zs.busi.entity.ZsInfoVo" >
+  	UPDATE TOP(1) zs_客户  SET 是否新分配='0' WHERE 客户id=#{cusId} 
+	insert into dbo.zs_客户跟进记录 (客户id,跟进人id,跟进日期,跟进方式,跟进内容) values (#{cusId},#{employeeId},#{followDate},#{followWay},#{followInfo});
+ </insert>
+ <update id="updateZsBasicInfoDao" parameterType="com.zs.busi.entity.ZsInfoVo">
+ 	
+	 	update dbo.zs_客户 
+	 	<set>
+	 		<if test="cusName != null and '' !=cusName">
+	 			客户名称=#{cusName},
+	 		</if>
+			<if test="cusNo != null and '' !=cusNo">
+	 			客户编号=#{cusNo},
+	 		</if>
+	 		<if test="compSymbol != null and '' !=compSymbol">
+	 			公司标志=#{compSymbol},
+	 		</if>
+	 		<if test="legalPerson != null and '' !=legalPerson">
+	 			法人代表=#{legalPerson},
+	 		</if>
+	 		<if test="addr != null and '' !=addr">
+	 			地址市=#{addr},
+	 		</if>
+	 		<if test="addrArea != null and '' !=addrArea">
+	 			地址区=#{addrArea},
+	 		</if>
+	 		<if test="addrRoad != null and '' !=addrRoad">
+	 			地址路=#{addrRoad},
+	 		</if>
+	 		<if test="person != null and '' !=person">
+	 			联系人=#{person},
+	 		</if>
+	 		<if test="tel != null and '' !=tel">
+	 			联系电话=#{tel},
+	 		</if>
+	 		<if test="faxNo != null and '' !=faxNo">
+	 			传真号=#{faxNo},
+	 		</if>
+	 		<if test="zipCode != null and '' !=zipCode">
+	 			邮政编码=#{zipCode},
+	 		</if>
+	 		<if test="accountBank != null and '' !=accountBank">
+	 			开户银行=#{accountBank},
+	 		</if>
+	 		<if test="accountNo != null and '' !=accountNo">
+	 			银行帐号=#{accountNo},
+	 		</if>
+	 		<if test="cusNo != null and '' !=cusNo">
+	 			客户编号=#{cusNo},
+	 		</if>
+	 		<if test="sex != null and '' !=sex">
+	 			性别=#{sex},
+	 		</if>
+	 		<if test="birthday != null and '' !=birthday">
+	 			出生年月=#{birthday},
+	 		</if>
+	 		<if test="email != null and '' !=email">
+	 			Email=#{email},
+	 		</if>
+	 		<if test="homePage != null and '' !=homePage">
+	 			主页地址=#{homePage},
+	 		</if>
+	 		<if test="residenceAddr != null and '' !=residenceAddr">
+	 			户口所在地=#{residenceAddr},
+	 		</if>
+	 		<if test="idName != null and '' !=idName">
+	 			证件名称=#{idName},
+	 		</if>
+	 		<if test="idNo != null and '' !=idNo">
+	 			身份证号码=#{idNo},
+	 		</if>
+	 		<if test="workComp != null and '' !=workComp">
+	 			工作单位=#{workComp},
+	 		</if>
+	 		<if test="appendInfo != null and '' !=appendInfo">
+	 			附加说明=#{appendInfo},
+	 		</if>
+	 		<if test="identitys != null and '' !=identitys">
+	 			身份=#{identitys},
+	 		</if>
+	 		<if test="nationality != null and '' !=nationality">
+	 			国籍=#{nationality},
+	 		</if>
+	 		<if test="classes != null and '' !=classes">
+	 			类别=#{classes},
+	 		</if>
+	 		<if test="levelId != null and '' !=levelId">
+	 			级别id=#{levelId},
+	 		</if>
+	 		<if test="cusDesp != null and '' !=cusDesp">
+	 			客户描述=#{cusDesp},
+	 		</if>
+	 		<if test="age != null and '' !=age">
+	 			年龄=#{age},
+	 		</if>
+	 		<if test="cusAbb != null and '' !=cusAbb">
+	 			客户简称=#{cusAbb},
+	 		</if>
+	 		<if test="phoneNo != null and '' !=phoneNo">
+	 			手机号码=#{phoneNo},
+	 		</if>
+	 		 <if test="monthIncome != null and '' !=monthIncome">
+	 			月收入=#{monthIncome},
+	 		</if>
+	 		<if test="yearIncome != null and '' !=yearIncome">
+	 			年收入=#{yearIncome},
+	 		</if>
+	 		<if test="firstVisWay != null and '' !=firstVisWay">
+	 			初次到访方式=#{firstVisWay},
+	 		</if>
+	 		<if test="accountCode != null and '' !=accountCode">
+	 			总帐编码=#{accountCode},
+	 		</if>
+	 		<if test="accountName != null and '' !=accountName">
+	 			总帐科目名称=#{accountName},
+	 		</if>
+	 		<if test="vipFee != null and '' !=vipFee">
+	 			已收会费=#{vipFee},
+	 		</if>
+	 		<if test="billNo != null and '' !=billNo">
+	 			收款单编号=#{billNo},
+	 		</if>
+	 		<if test="cardNo != null and '' !=cardNo">
+	 			卡号=#{cardNo},
+	 		</if>
+	 		<if test="followWay != null and '' !=followWay">
+	 			跟进方式=#{followWay},
+	 		</if>
+	 		<if test="nextFollowDate != null and '' !=nextFollowDate">
+	 			下次跟进时间=#{nextFollowDate},
+	 		</if>
+	 		<if test="intentionType != null and '' !=intentionType">
+	 			意向类别=#{intentionType},
+	 		</if>
+	 		<if test="houseUse != null and '' !=houseUse">
+	 			购房用途=#{houseUse},
+	 		</if>
+	 		<if test="factor != null and '' !=factor">
+	 			关注因素=#{factor},
+	 		</if>
+	 		<if test="workType != null and '' !=workType">
+	 			工作行业=#{workType},
+	 		</if>
+	 		<if test="visitTimes != null and '' !=visitTimes">
+	 			来访次数=#{visitTimes},
+	 		</if>
+	 		<if test="familyInfo != null and '' !=familyInfo">
+	 			家庭结构=#{familyInfo},
+	 		</if>
+	 		<if test="investmentInfo != null and '' !=investmentInfo">
+	 			招商业态=#{investmentInfo},
+	 		</if>
+	 		<if test="label != null and '' !=label">
+	 			标签=#{label},
+	 		</if>
+	 		<if test="intentionArea != null and '' !=intentionArea">
+	 			意向面积=#{intentionArea},
+	 		</if>
+	 		<if test="buyTimes != null and '' !=buyTimes">
+	 			置业次数=#{buyTimes},
+	 		</if>
+	 		<if test="competitor != null and '' !=competitor">
+	 			 竞争对手=#{competitor},
+	 		</if>
+	 		<if test="intentionPrice != null and '' !=intentionPrice">
+	 			 意向价格=#{intentionPrice},
+	 		</if>
+	 		<if test="intentionProduct != null and '' !=intentionProduct">
+	 			意向产品=#{intentionProduct},
+	 		</if>
+	 		<if test="intentionRoom != null and '' !=intentionRoom">
+	 			意向房型=#{intentionRoom},
+	 		</if>
+	 		<if test="valided != null and '' !=valided">
+	 			是否有效=#{valided},
+	 			无效日期=getdate(),
+	 		</if>
+	 		<if test="lastFollowDate!=null and ''!=lastFollowDate">
+	 			最近跟进日期=#{lastFollowDate},
+	 		</if>
+	 		<if test="createDate!=null and ''!=createDate">
+	 			创建日期=#{createDate},
+	 		</if>
+	 		<if test="customStatus!=null and ''!=customStatus">
+	 			客户状态=#{customStatus}
+	 		</if>
+	 	</set>
+	 	<where>
+	 		<if test="id != null and '' !=id">
+	 			id=#{id}
+	 		</if>
+			<if test="cusId != null and '' !=cusId">
+	 			and 客户id=#{cusId}
+			</if>
+	 	</where>
+ </update>
+ <select id="getZsEmployeeList" parameterType="com.zs.busi.entity.ZsInfoVo" resultType="com.zs.busi.entity.ZsEmployeeTableVo">
+ 	select id,员工id as employeeId,员工编号 as employeeNo,员工姓名 as employeeName,部门id as deptId,性别 as sex,职务 as duty,住址 as homeAddress,
+ 			联系电话 as tel,BP机  as bpNo,学历 as education,毕业院校 as school,专业 as major,籍贯 as nativePlace,出生日期 as birthday,入职日期 as entryDate,
+ 			离职日期 as leaveDate,备注 as note,岗位 as position,Email as email from dbo.员工 
+ 	<where>
+ 		<if test="employeeName !=null and ''!=employeeName">
+ 			员工姓名=#{employeeName}
+ 		</if>
+ 		<if test="deptName !=null and ''!=deptName">
+ 			and 部门id=(select 部门id from dbo.部门    where 部门名称=#{deptName})
+ 		</if>
+ 		<if test="duty !=null and ''!=duty">
+ 			and 职务=#{duty}
+ 		</if>
+ 		<if test="tel !=null and ''!=tel">
+ 			and 联系电话=#{tel}
+ 		</if>
+ 	</where>
+ </select>
+ <insert id="insertZsEmployee" useGeneratedKeys="true" keyProperty="id" parameterType="com.zs.busi.entity.ZsInfoVo">
+ 	declare @var varchar(100);
+	select @var=max(员工id) from dbo.员工;
+	set @var=@var+1;
+ 	insert into dbo.员工(员工id,员工编号,员工姓名,部门id,性别,职务,住址,联系电话,BP机,学历,毕业院校,专业,籍贯,出生日期,入职日期,离职日期,备注,岗位,Email)
+ 				values(@var,#{employeeNo},#{employeeName},#{detpId},#{sex},#{duty},#{homeAddress},#{tel},#{bpNo},#{education},#{school},
+ 				#{major},#{nativePlace},#{birthday},#{entryDate},#{leaveDate},#{note},#{position},#{email})
+ </insert>
+ <update id="updateZsEmployee" parameterType="com.zs.busi.entity.ZsInfoVo">
+ 	update dbo.员工
+ 	<set>
+ 		<if test="employeeId != null ">
+ 			员工id=#{employeeId},
+ 		</if>
+ 		<if test="employeeNo != null">
+ 			员工编号=#{employeeNo},
+ 		</if>
+ 		<if test="employeeName != null">
+ 			员工姓名=#{employeeName},
+ 		</if>
+ 		<if test="detpId != null">
+ 			部门id=#{detpId},
+ 		</if>
+ 		<if test="sex != null">
+ 			性别=#{sex},
+ 		</if>
+ 		<if test="duty != null">
+ 			职务=#{duty},
+ 		</if>
+ 		<if test="homeAddress != null">
+ 			住址=#{homeAddress},
+ 		</if>
+ 		<if test="tel != null">
+ 			联系电话=#{tel},
+ 		</if>
+ 		<if test="bpNo != null">
+ 			BP机=#{bpNo},
+ 		</if>
+ 		<if test="education != null">
+ 			学历=#{education},
+ 		</if>
+ 			<if test="school != null">
+ 			毕业院校=#{school},
+ 		</if>
+ 		<if test="major != null">
+ 			专业=#{major},
+ 		</if>
+ 		<if test="nativePlace != null">
+ 			籍贯=#{nativePlace},
+ 		</if>
+ 		<if test="birthday != null">
+ 			出生日期=#{birthday},
+ 		</if>
+ 		<if test="entryDate != null">
+ 			入职日期=#{entryDate},
+ 		</if>
+ 		<if test="leaveDate != null">
+ 			离职日期=#{leaveDate},
+ 		</if>
+ 		<if test="note != null">
+ 			备注=#{note},
+ 		</if>
+ 		<if test="position != null">
+ 			岗位=#{position},
+ 		</if>
+ 		<if test="email != null">
+ 			Email=#{email}
+ 		</if>
+ 	</set>
+ 		where id=#{id}
+ </update>
+ <update id="setCustomToInvalid" parameterType="com.zs.busi.entity.ZsInfoVo">
+ 	<if test="valided == null or '' ==valided"><!-- 无效 -->
+	 		<if test="cusId != null and '' !=cusId">
+	 			update dbo.客户意向条件 set 接待人id='-11' where 客户id=#{cusId};
+			</if>
+	 </if>
+ </update>
+ <select id="getDroplist" parameterType="string" resultType="com.zs.busi.entity.ZsDictionaryTableVo">
+ 	select id,类别 as classes,名称 as selectName,LTrim(RTrim(属性)) as property from dbo.zs_词典 
+ 	<where>
+ 		<if test='_parameter =="年龄段"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="认知途径"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="外展"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="网络"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="户外广告"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="展会/活动"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="报纸"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="电视"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="银行活动"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="介绍"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="购房用途"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="意向面积"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="关注因素"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="工作区域"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="居住区域"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="工作行业"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="竞争对手"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="意向价格"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="意向产品"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="意向房型"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="家庭结构"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="招商业态"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="跟进方式"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 		<if test='_parameter =="意向级别"'>
+ 			类别=#{_parameter}
+ 		</if>
+ 	</where>
+ </select>
+ <select id="getIntentionLevel" resultType="com.zs.busi.entity.ZsIntentionTableVo">
+ 	select id ,级别 as property ,级别名称  as selectName  from dbo.客户分类
+ </select>
+ <select id="getZsCustomCountByTypeDao" parameterType="com.zs.busi.entity.ZsInfoVo" resultType="Integer">	
+	declare @followDays int;
+	select @followDays=名称 from dbo.zs_词典 where 类别='招商逾期天数';
+	select count(a.客户id) from dbo.zs_客户 a,dbo.zs_客户意向条件 b  where a.客户id=b.客户id and b.接待人id=#{employeeId} and b.项目id=#{progGuid}
+	and a.是否有效=1
+	<if test="cusType!=null and cusType=='toVisit'">
+		and DATEDIFF(DAY, a.下次跟进时间, GETDATE()) = 0  AND a.是否新分配='0'
+	</if>
+	<if test="cusType!=null and cusType=='overDue3Days'">
+		and DATEDIFF(DAY, a.最近跟进日期,GETDATE()) >  (@followDays-3) and DATEDIFF(DAY,a.最近跟进日期,GETDATE()) &lt;=@followDays  AND a.是否新分配='0'
+	</if>
+	<if test="cusType!=null and cusType=='overDue'">
+		and DATEDIFF(DAY,dateadd(DAY, @followDays, a.最近跟进日期),getdate()) >  0  AND a.是否新分配='0'
+	</if>
+	<if test="cusType!=null and cusType=='newAssign'">
+		and  a.是否新分配='1'
+	</if>
+ </select>
+ <select id="getZsCustomListInfoByTypeDao" parameterType="com.zs.busi.entity.ZsInfoVo" resultType="com.zs.busi.entity.ZsInfoVo">
+ 	declare @followDays int;
+	select @followDays=名称 from dbo.zs_词典 where 类别='招商逾期天数';
+ 	select a.客户id as cusId,a.客户名称 as cusName,a.意向类别 as intentionType,a.联系电话 as tel,b.跟进日期 as followDate,b.跟进方式 as followWayEach,跟进内容  as followInfo  
+	into #temp from dbo.zs_客户 a,dbo.zs_客户跟进记录 b,zs_客户意向条件 c where a.客户id = c.客户id and a.客户id = b.客户id and c.接待人id = #{employeeId} and b.跟进日期 = a.最近跟进日期 
+	and c.项目id=#{progGuid} and a.是否有效=1
+	<if test="cusType!=null and cusType=='toVisit'">
+		and DATEDIFF(DAY, a.下次跟进时间, GETDATE()) = 0 AND a.是否新分配='0'
+	</if>
+	<if test="cusType!=null and cusType=='overDue3Days'">
+		and DATEDIFF(DAY, a.最近跟进日期,GETDATE()) >  (@followDays-3) and DATEDIFF(DAY,a.最近跟进日期,GETDATE()) &lt;=@followDays AND a.是否新分配='0'
+	</if>
+	<if test="cusType!=null and cusType=='overDue'">
+		and DATEDIFF(DAY,dateadd(DAY, @followDays, a.最近跟进日期),getdate()) >  0 AND a.是否新分配='0'
+	</if>
+	<if test="cusType!=null and cusType=='newAssign'">
+		and  a.是否新分配='1'
+	</if>
+	order by b.跟进日期 desc,a.客户id desc
+	select * from #temp where cusId in(select top ${length} cusId from #temp where cusId not in (select top ${startIndex} cusId from #temp))
+	drop table #temp
+ </select>
+ <select id="getTel_allCustomer" resultType="java.util.HashMap">
+ 	select 手机号码 as tel from zs_客户  where [手机号码] !=''
+ </select>
+ <select id="getDictionaryValue" parameterType="com.zs.busi.entity.ZsDictionaryTableVo" resultType="com.zs.busi.entity.ZsDictionaryTableVo">
+ 	select id,类别 as classes,名称 as selectName,属性 as property  from dbo.zs_词典   where 类别=#{classes};
+ </select>
+ </mapper>

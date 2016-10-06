@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper  namespace="com.zs.common.dao.IOptionListDao">
+ 	<select id="getOptionListByModule" parameterType="com.zs.common.entity.SearchOptionEntity" resultType="com.zs.common.entity.SearchOptionEntity">
+ 		select * from zs_searchoption where module=#{module} and isShow='1' order by sort
+ 	</select>
+ </mapper>

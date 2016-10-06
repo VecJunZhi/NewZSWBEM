@@ -1,0 +1,38 @@
+cst_type客户类型 0 新客户 
+       1 自己客户 
+       2 别人客户 
+       3 公共客户 
+       4 异常客户(是否是咱们说的无效客户) 
+
+json格式 
+{"cst_type":1;"isown":1;"allow_gj":1;"data":{"redirect_url":"http://...";"is_show_saler_name":"..";"cst_name":"li";"stageName":"hehe";"createdOn":"2015-1-1";"user_name":"employee";"tel":"123445";"cst_id":2;"opp_id":111}} 
+
+参数含义： 
+cst_type 客户类型 
+cst_name 客户名称 
+isown 是否是自己的公共客户 
+allow_gj 是否允许跟进 
+is_show_saler_name 是否显示置业顾问名称 
+cst_name 客户名称 
+stageName 跟进状态 
+createdOn 创建日期 
+user_name 置业顾问名称 
+tel 置业顾问手机号 
+cst_id客户id 
+opp_id 不知道？ 
+
+
+新客户    cst_type   redirect_url 
+自身客户  cst_type   redirect_url 
+别人客户  cst_type   is_show_saler_name     cst_name   stageName   createdOn   user_name   tel 
+公共客户  cst_type   isown         allow_gj   cst_name   stageName   createdOn 
+
+
+测试号 
+0      新客户   
+1      自身客户  
+20     其它置业顾问的客户，但不显示置业顾问 
+21     其它置业顾问的客户，且显示置业顾问，可联系 
+30     不是自己的且可以跟进的公共客户 
+31     非30的情况 
+4      异常客户

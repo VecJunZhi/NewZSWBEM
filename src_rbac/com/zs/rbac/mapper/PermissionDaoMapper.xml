@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="com.zs.rbac.dao.PermissionDao">
+ 	<select id="queryPermission" parameterType="com.zs.rbac.entity.Permission" resultType="com.zs.rbac.entity.Permission">
+	 	SELECT
+		permissionID,
+		permissionName,
+		permissionMark,
+		permissionType,
+		parentID,
+		url,
+		priority,
+		available,
+		createTime,
+		lastTime,
+		description into #tmp_table
+		FROM
+			[dbo].[zs_rbac_permission]
+		<where>
+			1=1
+			<if test="permissionName !=null and ''!= permissionName">
+ 				and permissionName=#{permissionName}
+ 			</if>
+ 			<if test="permissionMark !=null and ''!= permissionMark">
+ 				and permissionMark=#{permissionMark}
+ 			</if>
+ 			<if test="permissionType  !=null and ''!= permissionType">
+ 				and permissionType like '%${permissionType}%'
+ 			</if>
+ 			<if test="parentID !=null and ''!= parentID">
+ 				and parentID=#{parentID}
+ 			</if>
+ 			<if test="url !=null and ''!= url">
+ 				and url=#{url}
+ 			</if>
+ 			<if test="priority !=null and ''!= priority">
+ 				and priority=#{priority}
+ 			</if>
+ 			<if test="available  !=null and ''!= available">
+ 				and available=#{available}
+ 			</if>
+ 			<if test="createTime  !=null and ''!= createTime">
+ 				and createTime=#{createTime}
+ 			</if>
+ 			<if test="lastTime  !=null and ''!= lastTime">
+ 				and lastTime=#{lastTime}
+ 			</if>
+ 			<if test="description  !=null and ''!= description">
+ 				and description=#{description}
+ 			</if>
+ 			<if test="permissionID  !=null and ''!= permissionID">
+ 				and permissionID=#{permissionID}
+ 			</if>
+		</where>
+		<!-- 不分页 -->
+		<if test="rows ==null or ''== rows"> 
+			SELECT * FROM #tmp_table  
+		</if>
+		<!-- 分页 -->
+		<if test="rows !=null and ''!= rows">
+			select top ${rows} * from #tmp_table where permissionID not in (select top ${startLength} permissionID from #tmp_table ORDER BY permissionID desc)
+		</if>
+		ORDER BY Priority asc
+		DROP TABLE #tmp_table 
+ 	</select>
+ 	<insert id="createPermission" parameterType="com.zs.rbac.entity.Permission">
+ 		INSERT INTO zs_rbac_permission (
+			PermissionName,
+			PermissionMark,
+			PermissionType,
+			ParentID,
+			URL,
+			Priority,
+			Available,
+			CreateTime,
+			LastTime,
+			Description
+		)
+		VALUES
+			(#{permissionName},#{permissionMark},#{permissionType},#{parentID},#{url},#{priority},#{available},#{createTime},#{lastTime},#{description})
+ 	</insert>
+ 	<update id="updatePermission" parameterType="com.zs.rbac.entity.Permission">
+ 		UPDATE zs_rbac_permission
+ 		<set>
+ 			<if test="permissionName !=null and ''!= permissionName">
+ 				permissionName=#{permissionName},
+ 			</if>
+ 			<if test="permissionMark !=null and ''!= permissionMark">
+ 				permissionMark=#{permissionMark},
+ 			</if>
+ 			<if test="permissionType  !=null and ''!= permissionType">
+ 				permissionType=#{permissionType},
+ 			</if>
+ 			<if test="url !=null and ''!= url">
+ 				url=#{url},
+ 			</if>
+ 			<if test="priority !=null and ''!= priority">
+ 				priority=#{priority},
+ 			</if>
+ 			<!-- <if test="available  !=null and ''!= available"> -->
+ 				available=#{available},
+ 			<!-- </if> -->
+ 			<if test="createTime  !=null and ''!= createTime">
+ 				createTime=#{createTime},
+ 			</if>
+ 			<if test="lastTime  !=null and ''!= lastTime">
+ 				lastTime=#{lastTime},
+ 			</if>
+ 			<if test="description  !=null and ''!= description">
+ 				description=#{description}
+ 			</if>
+ 		</set>
+ 		WHERE permissionID =#{permissionID}
+ 	</update>
+ 	<delete id="deletePermission" parameterType="com.zs.rbac.entity.Permission">
+ 			DELETE
+			FROM
+				zs_rbac_permission
+			WHERE
+				permissionID =#{permissionID}
+ 	</delete>
+ </mapper>

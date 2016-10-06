@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper  namespace="com.zs.common.dao.InspectRoomStatisticsDao">
+ 	
+ 	<!--根据项目id查询该项目下的可验楼栋信息  -->
+ 	<select id="getBldInfoListDao" parameterType="com.zs.common.entity.InspectRoomSearchInfoVo" resultType="com.zs.common.entity.BuildingTableEntity">
+  		select a.bldGuid,b.BldName as bldName,b.ProjGUID as projGuid from zs_BuildingExt a left join p_Building b on a.bldGuid = b.BldGUID  where 1=1
+  		<if test="projGuid!=null and ''!=projGuid">
+  			and b.ProjGUID = #{projGuid}
+  		</if>
+  		order by b.BldCode
+  	</select>
+ 	<!--查询某楼栋下的问题分类统计信息  -->
+ 	<select id="getIssuesTypeStatisticsInfoDao" parameterType="com.zs.common.entity.InspectRoomSearchInfoVo" resultType="com.zs.common.entity.InspectRoomStatisticsInfoVo">
+ 		select b.parentCode as issueId,max(c.issueName) as issueType,count(*) as issueNum from zs_IssuesDetail a left join zs_IssuesType b 
+ 		on a.issueCode=b.issueCode left join  zs_IssuesType c on b.parentCode=c.issueCode left join zs_IssuesRoom d on a.issueRoomId=d.issueRoomId 
+ 		left join zs_InspectRoom e on d.roomGuid=e.roomGuid
+        where c.issueName is not null 
+        <if test="projGuid != null and ''!= projGuid">
+        	and e.projGuid = #{projGuid}
+        </if>
+        <if test="bldGuid != null and ''!= bldGuid">
+        	<!-- and e.bldGuid = #{bldGuid} -->
+        	and CONVERT(varchar(50),e.bldGuid) in (${bldGuid})
+        </if>
+        group by b.parentCode
+ 	</select>
+  	<!--查询某楼栋下的问题状态统计信息  -->
+  	<select id="getIssuesStatusStatisticsInfoDao" parameterType="com.zs.common.entity.InspectRoomSearchInfoVo" resultType="com.zs.common.entity.InspectRoomStatisticsInfoVo">
+  		select a.status,case a.status when 0 then '未修复' when 1 then '修复完成' when 2 then '确认完成' when 3 then '退回返修' when 4 then '复修完成' end as issueType,
+  		count(*) as issueNum from zs_IssuesDetail a left join zs_IssuesRoom b on a.issueRoomId=b.issueRoomId left join zs_InspectRoom c on b.roomGuid=c.roomGuid
+  		where 1 = 1
+		<if test="projGuid != null and ''!= projGuid">
+			and c.projGuid = #{projGuid}
+		</if>
+		<if test="bldGuid != null and ''!= bldGuid">
+			<!-- and c.bldGuid = #{bldGuid} -->
+			and CONVERT(varchar(50),c.bldGuid) in (${bldGuid})
+		</if>
+		group by a.status
+  	</select>
+  	<!--查询某楼栋下的问题部位统计信息  -->
+  	<select id="getIssuesPositionStatisticsInfoDao" parameterType="com.zs.common.entity.InspectRoomSearchInfoVo" resultType="com.zs.common.entity.InspectRoomStatisticsInfoVo">
+  		select position as issueType,count(*) as issueNum from zs_IssuesDetail a left join zs_IssuesRoom b on a.issueRoomId=b.issueRoomId left join zs_InspectRoom c on b.roomGuid=c.roomGuid 
+		where a.position is not null and a.position !='' 
+		<if test="projGuid != null and ''!= projGuid">
+			and c.projGuid = #{projGuid}
+		</if>
+		<if test="bldGuid != null and ''!= bldGuid">
+			<!-- and c.bldGuid = #{bldGuid} -->
+			and CONVERT(varchar(50),c.bldGuid) in (${bldGuid})
+		</if>
+		group by position
+  	</select>
+ </mapper>

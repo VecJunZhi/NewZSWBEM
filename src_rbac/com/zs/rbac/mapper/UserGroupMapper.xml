@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zs.rbac.dao.UserGroupMapper" >
+  <resultMap id="BaseResultMap" type="com.zs.rbac.entity.UserGroup" >
+    <id column="GroupID" property="groupid" jdbcType="INTEGER" />
+    <result column="GroupName" property="groupname" jdbcType="VARCHAR" />
+    <result column="Available" property="available" jdbcType="INTEGER" />
+    <result column="ParentGroupID" property="parentgroupid" jdbcType="INTEGER" />
+    <result column="Priority" property="priority" jdbcType="VARCHAR" />
+    <result column="Description" property="description" jdbcType="VARCHAR" />
+    <result column="CreateTime" property="createtime" jdbcType="TIMESTAMP" />
+    <result column="LastTime" property="lasttime" jdbcType="TIMESTAMP" />
+  </resultMap>
+  <sql id="Base_Column_List" >
+    GroupID, GroupName, Available, ParentGroupID, Priority, Description, CreateTime, 
+    LastTime
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Integer" >
+    select 
+    <include refid="Base_Column_List" />
+    from zs_rbac_usergroup
+    where GroupID = #{groupid,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from zs_rbac_usergroup
+    where GroupID = #{groupid,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.zs.rbac.entity.UserGroup" >
+    insert into zs_rbac_usergroup (GroupID, GroupName, Available, 
+      ParentGroupID, Priority, Description, 
+      CreateTime, LastTime)
+    values (#{groupid,jdbcType=INTEGER}, #{groupname,jdbcType=VARCHAR}, #{available,jdbcType=INTEGER}, 
+      #{parentgroupid,jdbcType=INTEGER}, #{priority,jdbcType=VARCHAR}, #{description,jdbcType=VARCHAR}, 
+      #{createtime,jdbcType=TIMESTAMP}, #{lasttime,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.zs.rbac.entity.UserGroup" >
+    insert into zs_rbac_usergroup
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="groupid != null" >
+        GroupID,
+      </if>
+      <if test="groupname != null" >
+        GroupName,
+      </if>
+      <if test="available != null" >
+        Available,
+      </if>
+      <if test="parentgroupid != null" >
+        ParentGroupID,
+      </if>
+      <if test="priority != null" >
+        Priority,
+      </if>
+      <if test="description != null" >
+        Description,
+      </if>
+      <if test="createtime != null" >
+        CreateTime,
+      </if>
+      <if test="lasttime != null" >
+        LastTime,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="groupid != null" >
+        #{groupid,jdbcType=INTEGER},
+      </if>
+      <if test="groupname != null" >
+        #{groupname,jdbcType=VARCHAR},
+      </if>
+      <if test="available != null" >
+        #{available,jdbcType=INTEGER},
+      </if>
+      <if test="parentgroupid != null" >
+        #{parentgroupid,jdbcType=INTEGER},
+      </if>
+      <if test="priority != null" >
+        #{priority,jdbcType=VARCHAR},
+      </if>
+      <if test="description != null" >
+        #{description,jdbcType=VARCHAR},
+      </if>
+      <if test="createtime != null" >
+        #{createtime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="lasttime != null" >
+        #{lasttime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.zs.rbac.entity.UserGroup" >
+    update zs_rbac_usergroup
+    <set >
+      <if test="groupname != null" >
+        GroupName = #{groupname,jdbcType=VARCHAR},
+      </if>
+      <if test="available != null" >
+        Available = #{available,jdbcType=INTEGER},
+      </if>
+      <if test="parentgroupid != null" >
+        ParentGroupID = #{parentgroupid,jdbcType=INTEGER},
+      </if>
+      <if test="priority != null" >
+        Priority = #{priority,jdbcType=VARCHAR},
+      </if>
+      <if test="description != null" >
+        Description = #{description,jdbcType=VARCHAR},
+      </if>
+      <if test="createtime != null" >
+        CreateTime = #{createtime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="lasttime != null" >
+        LastTime = #{lasttime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where GroupID = #{groupid,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.zs.rbac.entity.UserGroup" >
+    update zs_rbac_usergroup
+    set GroupName = #{groupname,jdbcType=VARCHAR},
+      Available = #{available,jdbcType=INTEGER},
+      ParentGroupID = #{parentgroupid,jdbcType=INTEGER},
+      Priority = #{priority,jdbcType=VARCHAR},
+      Description = #{description,jdbcType=VARCHAR},
+      CreateTime = #{createtime,jdbcType=TIMESTAMP},
+      LastTime = #{lasttime,jdbcType=TIMESTAMP}
+    where GroupID = #{groupid,jdbcType=INTEGER}
+  </update>
+</mapper>

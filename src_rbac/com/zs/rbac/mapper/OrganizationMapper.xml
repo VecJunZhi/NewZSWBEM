@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zs.rbac.dao.OrganizationMapper" >
+  <resultMap id="BaseResultMap" type="com.zs.rbac.entity.Organization" >
+    <id column="ORGID" property="orgid" jdbcType="INTEGER" />
+    <result column="ORGName" property="orgname" jdbcType="VARCHAR" />
+    <result column="ORGType" property="orgtype" jdbcType="INTEGER" />
+    <result column="Description" property="description" jdbcType="VARCHAR" />
+    <result column="ParentID" property="parentid" jdbcType="INTEGER" />
+    <result column="Priority" property="priority" jdbcType="VARCHAR" />
+    <result column="Available" property="available" jdbcType="INTEGER" />
+    <result column="CreateTime" property="createtime" jdbcType="TIMESTAMP" />
+    <result column="LastTime" property="lasttime" jdbcType="TIMESTAMP" />
+  </resultMap>
+  <sql id="Base_Column_List" >
+    ORGID, ORGName, ORGType, Description, ParentID, Priority, Available, CreateTime, 
+    LastTime
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Integer" >
+    select 
+    <include refid="Base_Column_List" />
+    from zs_rbac_organization
+    where ORGID = #{orgid,jdbcType=INTEGER}
+    ORDER BY Priority ASC
+  </select>
+  <select id="selectBySelective" resultMap="BaseResultMap" parameterType="com.zs.rbac.entity.Organization" >
+    select 
+    <include refid="Base_Column_List" />
+    from zs_rbac_organization
+    <where>
+      <if test="orgname != null" >
+        ORGName = #{orgname,jdbcType=VARCHAR}
+      </if>
+      <if test="orgtype != null" >
+        ORGType = #{orgtype,jdbcType=INTEGER}
+      </if>
+      <if test="description != null" >
+        Description = #{description,jdbcType=VARCHAR}
+      </if>
+      <if test="parentid != null" >
+        ParentID = #{parentid,jdbcType=INTEGER}
+      </if>
+      <if test="priority != null" >
+        Priority = #{priority,jdbcType=VARCHAR}
+      </if>
+      <if test="available != null" >
+        Available = #{available,jdbcType=INTEGER}
+      </if>
+      <if test="createtime != null" >
+        CreateTime = #{createtime,jdbcType=TIMESTAMP}
+      </if>
+      <if test="lasttime != null" >
+        LastTime = #{lasttime,jdbcType=TIMESTAMP}
+      </if>
+      <if test="orgid != null" >
+        ORGID = #{orgid,jdbcType=INTEGER}
+      </if>
+    </where>
+    ORDER BY Priority ASC
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="com.zs.rbac.entity.Organization" >
+    delete from zs_rbac_organization
+    where ORGID = #{orgid,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.zs.rbac.entity.Organization" >
+    insert into zs_rbac_organization (ORGName, ORGType, 
+      Description, ParentID, Priority, 
+      Available, CreateTime, LastTime
+      )
+    values (#{orgname,jdbcType=VARCHAR}, #{orgtype,jdbcType=INTEGER}, 
+      #{description,jdbcType=VARCHAR}, #{parentid,jdbcType=INTEGER}, #{priority,jdbcType=VARCHAR}, 
+      #{available,jdbcType=INTEGER}, #{createtime,jdbcType=TIMESTAMP}, #{lasttime,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.zs.rbac.entity.Organization" >
+    insert into zs_rbac_organization
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="orgid != null" >
+        ORGID,
+      </if>
+      <if test="orgname != null" >
+        ORGName,
+      </if>
+      <if test="orgtype != null" >
+        ORGType,
+      </if>
+      <if test="description != null" >
+        Description,
+      </if>
+      <if test="parentid != null" >
+        ParentID,
+      </if>
+      <if test="priority != null" >
+        Priority,
+      </if>
+      <if test="available != null" >
+        Available,
+      </if>
+      <if test="createtime != null" >
+        CreateTime,
+      </if>
+      <if test="lasttime != null" >
+        LastTime,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="orgid != null" >
+        #{orgid,jdbcType=INTEGER},
+      </if>
+      <if test="orgname != null" >
+        #{orgname,jdbcType=VARCHAR},
+      </if>
+      <if test="orgtype != null" >
+        #{orgtype,jdbcType=INTEGER},
+      </if>
+      <if test="description != null" >
+        #{description,jdbcType=VARCHAR},
+      </if>
+      <if test="parentid != null" >
+        #{parentid,jdbcType=INTEGER},
+      </if>
+      <if test="priority != null" >
+        #{priority,jdbcType=VARCHAR},
+      </if>
+      <if test="available != null" >
+        #{available,jdbcType=INTEGER},
+      </if>
+      <if test="createtime != null" >
+        #{createtime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="lasttime != null" >
+        #{lasttime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.zs.rbac.entity.Organization">
+    update zs_rbac_organization
+    <set >
+      <if test="orgname != null and ''!= orgname" >
+        ORGName = #{orgname,jdbcType=VARCHAR},
+      </if>
+      <if test="orgtype != null and ''!= orgtype" >
+        ORGType = #{orgtype,jdbcType=INTEGER},
+      </if>
+      <if test="description != null and ''!= description" >
+        Description = #{description,jdbcType=VARCHAR},
+      </if>
+      <if test="parentid != null and ''!= parentid" >
+        ParentID = #{parentid,jdbcType=INTEGER},
+      </if>
+      <if test="priority != null and ''!= priority" >
+        Priority = #{priority,jdbcType=VARCHAR},
+      </if>
+      <if test="available != null" >
+        Available = #{available,jdbcType=INTEGER},
+      </if>
+      <if test="createtime != null and ''!= createtime" >
+        CreateTime = #{createtime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="lasttime != null and ''!= lasttime" >
+        LastTime = #{lasttime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where ORGID = #{orgid,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.zs.rbac.entity.Organization" >
+    update zs_rbac_organization
+    set ORGName = #{orgname,jdbcType=VARCHAR},
+      ORGType = #{orgtype,jdbcType=INTEGER},
+      Description = #{description,jdbcType=VARCHAR},
+      ParentID = #{parentid,jdbcType=INTEGER},
+      Priority = #{priority,jdbcType=VARCHAR},
+      Available = #{available,jdbcType=INTEGER},
+      CreateTime = #{createtime,jdbcType=TIMESTAMP},
+      LastTime = #{lasttime,jdbcType=TIMESTAMP}
+    where ORGID = #{orgid,jdbcType=INTEGER}
+  </update>
+</mapper>

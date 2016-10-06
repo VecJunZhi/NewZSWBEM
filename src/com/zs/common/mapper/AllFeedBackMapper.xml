@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zs.common.dao.AllFeedBackDao" >
+	<!-- 反馈列表 -->
+	<select id="findAllFeedBack" parameterType="com.zs.common.entity.ZsUpdateLogEntity" resultType="com.zs.common.entity.ZsUpdateLogEntity">
+		select  logTime,logSubject,logContent,userName,distinState,
+  			    row_number() over(order by logTime desc) as serialNum  into #tmp_table
+  		from zs_update_log 
+  		<include refid="paging"/>
+  		order by logTime desc
+  		DROP TABLE #tmp_table;
+	</select>
+	<sql id="paging">
+ 		<!-- 不分页 -->
+		<if test="length ==null or ''== length"> 
+			SELECT * FROM #tmp_table  where distinState='1'
+		</if>
+		<!-- 分页 -->
+		<if test="length !=null and ''!= length">
+			select top ${length} * from #tmp_table where serialNum&gt;${startIndex} and distinState='1'
+		</if>
+ 	</sql>
+	<!-- 发布反馈 -->
+	<insert id="postAllFeedBack" parameterType="com.zs.common.entity.ZsUpdateLogEntity" >
+         insert into zs_update_log
+         <trim prefix="(" suffix=")" suffixOverrides="," >
+           <if test="logSubject!= null" >
+              logSubject,
+           </if>
+      	   <if test="logContent!= null" >
+              logContent,
+      	   </if>
+      	   <if test="userName!= null" >
+              userName,
+      	   </if>
+              logTime,logClasses,distinState
+    	</trim>
+    	<trim prefix="values (" suffix=")" suffixOverrides="," >
+         <if test="logSubject!= null" >
+           #{logSubject},
+         </if>
+         <if test="logContent!= null" >
+           #{logContent},
+         </if>
+         <if test="userName!= null" >
+           #{userName},
+         </if>
+           getDate(),'前台','1'
+        </trim>
+  </insert>
+  <!-- 删除反馈-->
+  <delete id="delAllFeedBack" parameterType="com.zs.common.entity.ZsUpdateLogEntity">
+		delete from zs_update_log
+		where logTime=#{logTime};
+  </delete>
+  <!-- 新增回复 -->
+  <insert id="addReplyContent" parameterType="com.zs.common.entity.ZsReplyFeedEntity" >
+         insert into zs_reply_feed
+         <trim prefix="(" suffix=")" suffixOverrides="," >
+           <if test="logTime!= null" >
+              logTime,
+           </if>
+      	   <if test="replyContent!= null" >
+              replyContent,
+      	   </if>
+      	   <if test="replyName!= null" >
+              replyName,
+      	   </if>
+              replyTime,readType
+    	</trim>
+    	<trim prefix="values (" suffix=")" suffixOverrides="," >
+         <if test="logTime!= null" >
+           #{logTime},
+         </if>
+         <if test="replyContent!= null" >
+           #{replyContent},
+         </if>
+         <if test="replyName!= null" >
+           #{replyName},
+         </if>
+           getDate(),'未读'
+        </trim>
+  </insert>
+  <!-- 查询回复 -->
+  <select id="queryReplyContents" parameterType="com.zs.common.entity.ZsReplyFeedEntity" resultType="com.zs.common.entity.ZsReplyFeedEntity">
+  		select replyName,replyContent,replyTime,logTime
+  		from zs_reply_feed
+  		where logTime=#{logTime}
+  		order by replyTime desc;
+  </select>
+  <!-- 查询未读回复 -->
+  <select id="getUnReadReply" parameterType="com.zs.common.entity.ZsReplyFeedEntity" resultType="com.zs.common.entity.ZsReplyFeedEntity">
+  		select logTime,readType
+  		from zs_reply_feed
+  		where logTime=#{logTime}
+  		and readType='未读'
+  </select>
+  <!-- 更改阅读状态 -->
+  <update id="changeUnReadType" > 	
+  	update zs_reply_feed
+  	<set> 			 	
+  	  readType='已读'
+  	</set>	
+  	where logTime=#{logTime}		 
+  </update> 
+   <!-- 删除回复-->
+  <delete id="delReplyFeed" parameterType="com.zs.common.entity.ZsReplyFeedEntity">
+		delete from zs_reply_feed
+		where logTime=#{logTime};
+  </delete>
+  
+  
+  
+</mapper>
+

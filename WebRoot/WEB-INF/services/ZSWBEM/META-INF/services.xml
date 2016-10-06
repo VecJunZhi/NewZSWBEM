@@ -1,0 +1,37 @@
+<!-- ~ Licensed to the Apache Software Foundation (ASF) under one ~ or more 
+	contributor license agreements. See the NOTICE file ~ distributed with this 
+	work for additional information ~ regarding copyright ownership. The ASF 
+	licenses this file ~ to you under the Apache License, Version 2.0 (the ~ 
+	"License"); you may not use this file except in compliance ~ with the License. 
+	You may obtain a copy of the License at ~ ~ http://www.apache.org/licenses/LICENSE-2.0 
+	~ ~ Unless required by applicable law or agreed to in writing, ~ software 
+	distributed under the License is distributed on an ~ "AS IS" BASIS, WITHOUT 
+	WARRANTIES OR CONDITIONS OF ANY ~ KIND, either express or implied. See the 
+	License for the ~ specific language governing permissions and limitations 
+	~ under the License. -->
+
+<service name="AxisService">
+	<description>AxisService</description>
+	<parameter name="ServiceClass">com.zs.oa.web.action.OtherAttendSynchAction</parameter>
+	
+	<operation name="smpTongXin">
+		<messageReceiver class="org.apache.axis2.rpc.receivers.RPCMessageReceiver" />
+	</operation>
+	<operation name="selectExistEmployData">
+		<messageReceiver class="org.apache.axis2.rpc.receivers.RPCMessageReceiver" />
+	</operation>
+	<!-- <operation name="gethi">
+		<messageReceiver class="org.apache.axis2.rpc.receivers.RPCMessageReceiver" />
+	</operation>
+	<operation name="checkEntPasswords">
+		<messageReceiver class="org.apache.axis2.rpc.receivers.RPCMessageReceiver" />
+	</operation> -->
+	<!-- 
+	<operation name="showName">
+		<messageReceiver class="org.apache.axis2.rpc.receivers.RPCMessageReceiver" />
+	</operation>
+	<operation name="getName">
+		<messageReceiver class="org.apache.axis2.rpc.receivers.RPCInOnlyMessageReceiver" />
+	</operation>
+	 -->
+</service>

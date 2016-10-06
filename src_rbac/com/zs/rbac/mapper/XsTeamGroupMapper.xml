@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="com.zs.rbac.dao.XsTeamGroupDao">
+
+<!-- =============================================下面进入销售团队管理=========================================  -->	
+ 	<!-- 获得销售项目列表 -->
+ 	<select id="getProjectItem" parameterType="com.zs.crm.web.vo.XsTeamGroupVo" resultType="com.zs.crm.entity.XsTeamGroupEntity">
+ 		<!-- SELECT projectId as id,projectName as name FROM zs_teamgroup where available=1 GROUP BY projectId,projectName ORDER BY id desc; -->
+ 		select ProjGUID as id,projShortName as name from p_Project where ProjStatus='在售' order by BuildBeginDate desc;
+ 	</select>
+ 	<!-- 获得销售项目对应的团队分组信息 -->
+ 	<select id="getTeamGroupFromProject" parameterType="com.zs.crm.web.vo.XsTeamGroupVo" resultType="com.zs.crm.entity.XsTeamGroupEntity">
+ 		SELECT
+			id,
+			groupName AS name,
+			projectId,
+			isProjectAdmin,
+			description,
+			groupType,
+			projectName,
+			available
+		FROM
+			zs_teamgroup
+		<where>
+			<if test="projectId !=null and ''!= projectId">
+				projectId = #{projectId}
+			</if>
+			<if test="isProjectAdmin !=null and ''!= isProjectAdmin">
+				and isProjectAdmin = #{isProjectAdmin}
+			</if>
+			<if test="groupType !=null and ''!= groupType">
+				and groupType = #{groupType}
+			</if>
+			<if test="id !=null and ''!=id">
+				and id=#{id}
+			</if>
+		</where>
+ 	</select>
+ 	<!-- 获得对应组的组员信息 -->
+ 	<select id="getUserFromTeamGroup" parameterType="com.zs.crm.web.vo.XsTeamGroupVo" resultType="com.zs.crm.entity.XsTeamGroupEntity">
+		SELECT
+			a.userId,
+			a.userName,
+			a.mobile,
+			b.teamGroupId,
+			c.groupName,
+			b.userLevelId,
+			b.description,
+			b.id as userTeamId,
+			c.projectId,
+			d.value
+		into #userTemp
+		FROM
+			zs_rbac_user a
+		LEFT JOIN zs_user_teamgroup b ON a.userId = b.userId
+		LEFT JOIN zs_teamgroup c ON b.teamGroupId = c.Id
+		LEFT JOIN zs_rbac_user_ext d ON d.userId = b.userId
+		WHERE
+			c.Id in (SELECT id FROM zs_teamgroup WHERE 1=1
+			<if test="projectId!=null and ''!=projectId">
+				and projectId = #{projectId}
+			</if>
+			<if test="teamGroupId!=null and ''!=teamGroupId">
+				and id=#{teamGroupId}
+			</if>			
+			)
+			<if test="userLevelId!=null and ''!=userLevelId">
+				and b.userLevelId=#{userLevelId}
+			</if>
+			<if test="groupType!=null and ''!=groupType">
+				and c.groupType=#{groupType}
+			</if>		
+			<if test="userName!=null and ''!=userName">
+				and a.UserName like '%${userName}%'
+			</if>
+			<if test="mobileTel!=null and ''!=mobileTel">
+				and a.mobile like '%${mobileTel}%'
+			</if> 
+			<if test=" property !=null and ''!= property">
+				and d.property=#{property}
+			</if>
+		<if test="length!=null and ''!=length">
+			select top ${length} * from #userTemp where userId not in (select top ${startIndex} userId from #userTemp ORDER BY userId desc)
+			ORDER BY userId desc
+		</if>
+		<if test="length==null or ''==length">  
+			select * from #userTemp
+		</if>
+		drop table #userTemp
+ 	</select>
+ 	<select id="judgeTeamGroupIfExist" parameterType="com.zs.crm.web.vo.XsTeamGroupVo" resultType="java.lang.Integer">
+	 	SELECT
+			COUNT(*)
+		FROM
+			zs_teamgroup
+		WHERE
+			EXISTS (
+				SELECT
+					*
+				FROM
+					zs_teamgroup
+				WHERE
+					groupName = #{groupName}
+				AND projectId = #{projectId}
+			);
+ 	</select>
+ 	<!-- 增加分组 -->
+ 	<insert id="insertTeamGroup" parameterType="com.zs.crm.web.vo.XsTeamGroupVo">
+ 		INSERT INTO zs_teamgroup (
+			groupName,
+			projectId,
+			isProjectAdmin,
+			description,
+			groupType,
+			projectName,
+			available
+		)VALUES(
+				#{groupName},
+				#{projectId},
+				#{isProjectAdmin},
+				#{description},
+				#{groupType},
+				#{projectName},
+				#{available}
+		);
+ 	</insert>
+ 	<delete id="deleteTeamGoup" parameterType="com.zs.crm.web.vo.XsTeamGroupVo">
+ 		DELETE FROM dbo.zs_teamgroup WHERE id=#{id}
+ 	</delete>
+ 	<update id="updateTeamGoup" parameterType="com.zs.crm.web.vo.XsTeamGroupVo">
+ 		UPDATE zs_teamgroup SET groupName=#{groupName} WHERE id=#{id}
+ 	</update>
+ 	<!-- 当新增时，判断该用户是否已经存在于该组中 -->
+ 	<select id="judgeUserIfExistInTeamGroup" parameterType="com.zs.crm.web.vo.XsTeamGroupVo" resultType="com.zs.crm.entity.XsTeamGroupEntity">
+	 	SELECT
+			a.*, b.realName
+		FROM
+			zs_user_teamgroup a
+		LEFT JOIN zs_rbac_user b ON a.userId = b.UserID
+		WHERE
+			a.userId IN 
+			<foreach collection="array" item="userId" index="index" open="(" close=")" separator=",">
+				#{userId}
+			</foreach>
+		AND a.teamGroupId =#{teamGroupId}
+ 	</select>
+ 	<!-- 新增组里成员 -->
+ 	<insert id="insertUserToTeamGroup" parameterType="com.zs.crm.web.vo.XsTeamGroupVo">
+ 		INSERT INTO zs_user_teamgroup(
+			userId,
+			teamGroupId,
+			userLevelId,
+			Description
+		)VALUES
+		<foreach collection="list" item="xsTeamGroup" index="index" separator=",">
+			(#{xsTeamGroup.userId}, #{xsTeamGroup.teamGroupId}, #{xsTeamGroup.userLevelId}, #{xsTeamGroup.description})
+ 		</foreach>
+ 	</insert>
+ 	
+ 	<!-- 编辑组里成员  将该成员移到其他组   将该成员定义为组长或组员 -->
+ 	<update id="updateUserInTeamGroup" parameterType="com.zs.crm.web.vo.XsTeamGroupVo">
+	 	UPDATE zs_user_teamgroup
+		<set>
+			<if test="teamGroupId !=null and ''!=teamGroupId">
+				teamGroupId = #{teamGroupId},
+			</if>
+			<if test="userLevelId !=null and ''!= userLevelId">
+				userLevelId = #{userLevelId},
+			</if>
+			<if test="description !=null and ''!= description">
+				 Description =#{description}
+			</if>
+		</set>
+		WHERE (id = #{id});
+ 	</update>
+ 	<!-- 移除组里成员 -->
+ 	<delete id="deleteUserFromTeamGroup" parameterType="com.zs.crm.web.vo.XsTeamGroupVo">
+ 		DELETE FROM zs_user_teamgroup WHERE id=#{id}
+ 	</delete>
+ </mapper>

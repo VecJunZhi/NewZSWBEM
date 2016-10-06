@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper  namespace="com.zs.crm.dao.XsCustomReportDao">
+	 <select id="getCustomCountByDateAndWayDao" parameterType="com.zs.crm.entity.XsCustomReportSearchVo" resultType="Integer">
+		select count(*) from (
+			select ROW_NUMBER() over (order by opp.GjDate desc,p.CstGUID) id,p.CstGUID,p.CstName, 
+			(CASE WHEN ISNULL(OfficeTel,'')='' THEN '' ELSE '(0)' + OfficeTel + CHAR(13) + CHAR(10) END ) + 
+	     	(CASE WHEN ISNULL(HomeTel,'')='' THEN '' ELSE '(H)'+ HomeTel + CHAR(13) + CHAR(10) END ) + 
+	     	(CASE WHEN ISNULL(MobileTel,'')='' THEN '' ELSE '(M)'+ MobileTel + CHAR(13) + CHAR(10) END ) AS mobileTel , 
+	     	p.Gender as sex,op.Gfyx,op.Status,opp.Gjfs,op.SubMediaName as oppSource,p2.HomeArea,opp.GjDate as lastDate,us.groupName as team,us.UserName as zygw
+			from s_Opp2Gjjl opp 
+			INNER JOIN s_Opportunity op ON op.OppGUID=opp.OppGUID 
+			LEFT JOIN p_Customer p ON p.CstGUID=op.CstGUID 
+			LEFT JOIN p_CstAttribute p2 ON p2.CstGUID=p.CstGUID 
+			LEFT JOIN vs_user_tm us ON us.value=cast(opp.GjrGUID AS varchar(max)) 
+			where 1=1 and us.groupName like '%销售%' and opp.GjContent not like '%自动跟进%'
+		<if test="startTime!=null and ''!=startTime">
+			AND opp.GjDate &gt;= #{startTime}
+		</if>
+		<if test="endTime!=null and ''!=endTime">
+			AND opp.GjDate &lt;= #{endTime}
+		</if>
+		<if test="userId!=null and ''!=userId">
+			AND opp.GjrGUID = #{userId}
+		</if>
+		<if test="projGuid!=null and ''!=projGuid">
+			AND op.ProjGUID = #{projGuid}
+		</if>
+		<if test="cstName!=null and ''!=cstName">
+			AND p.CstName like '%${cstName}%'
+		</if>
+		<if test="mobileTel!=null and ''!=mobileTel">
+			AND (p.MobileTel like '%${mobileTel}%' or p.HomeTel like '%${mobileTel}%' or p.OfficeTel like '%${mobileTel}%')
+		</if>
+		<if test="gjfs!=null and ''!=gjfs">
+			AND opp.gjfs = #{gjfs}
+		</if> 
+		<if test="first==null or ''==first">
+			<!-- AND DATEDIFF(DAY,opp.GjDate,p.CreatedOn) != 0 -->
+			AND opp.GjDate != p.CreatedOn
+		</if>
+		<if test="first!=null and ''!=first">
+			<!-- AND DATEDIFF(DAY,opp.GjDate,p.CreatedOn)=0 -->
+			AND opp.GjDate = p.CreatedOn
+		</if>
+		<if test="team!=null and ''!=team">
+			AND us.groupname = #{team}
+		</if>
+		) a
+		where 1=1
+	 </select>
+	 <select id="getCustomInfoByDateAndWayDao" parameterType="com.zs.crm.entity.XsCustomReportSearchVo" resultType="com.zs.crm.entity.XsCustomReportEntity">
+			select * from (
+			select ROW_NUMBER() over (order by opp.GjDate desc,p.CstGUID) id,p.CstGUID,p.CstName, 
+			(CASE WHEN ISNULL(OfficeTel,'')='' THEN '' ELSE '(0)' + OfficeTel + CHAR(13) + CHAR(10) END ) + 
+	     	(CASE WHEN ISNULL(HomeTel,'')='' THEN '' ELSE '(H)'+ HomeTel + CHAR(13) + CHAR(10) END ) + 
+	     	(CASE WHEN ISNULL(MobileTel,'')='' THEN '' ELSE '(M)'+ MobileTel + CHAR(13) + CHAR(10) END ) AS mobileTel , 
+	     	p.Gender as sex,op.Gfyx,op.Status,opp.Gjfs,op.SubMediaName as oppSource,p2.HomeArea,opp.GjDate as lastDate,us.groupName as team,us.UserName as zygw
+			from s_Opp2Gjjl opp 
+			INNER JOIN s_Opportunity op ON op.OppGUID=opp.OppGUID 
+			LEFT JOIN p_Customer p ON p.CstGUID=op.CstGUID 
+			LEFT JOIN p_CstAttribute p2 ON p2.CstGUID=p.CstGUID 
+			LEFT JOIN vs_user_tm us ON us.value=cast(opp.GjrGUID AS varchar(max)) 
+			where 1=1 and us.groupName like '%销售%' and opp.GjContent not like '%自动跟进%'
+		<if test="startTime!=null and ''!=startTime">
+			AND opp.GjDate &gt;= #{startTime}
+		</if>
+		<if test="endTime!=null and ''!=endTime">
+			AND opp.GjDate &lt;= #{endTime}
+		</if>
+		<if test="userId!=null and ''!=userId">
+			AND opp.GjrGUID = #{userId}
+		</if>
+		<if test="projGuid!=null and ''!=projGuid">
+			AND op.ProjGUID = #{projGuid}
+		</if>
+		<if test="cstName!=null and ''!=cstName">
+			AND p.CstName like '%${cstName}%'
+		</if>
+		<if test="mobileTel!=null and ''!=mobileTel">
+			AND (p.MobileTel like '%${mobileTel}%' or p.HomeTel like '%${mobileTel}%' or p.OfficeTel like '%${mobileTel}%')
+		</if>
+		<if test="gjfs!=null and ''!=gjfs">
+			AND opp.gjfs = #{gjfs}
+		</if> 
+		<if test="first==null or ''==first">
+			<!-- AND DATEDIFF(DAY,opp.GjDate,p.CreatedOn) != 0 -->
+			AND opp.GjDate != p.CreatedOn
+		</if>
+		<if test="first!=null and ''!=first">
+			<!-- AND DATEDIFF(DAY,opp.GjDate,p.CreatedOn)=0 -->
+			AND opp.GjDate = p.CreatedOn
+		</if>
+		<if test="team!=null and ''!=team">
+			AND us.groupname = #{team}
+		</if>
+		) a
+		where 1=1
+		<if test="length!=null and ''!=length">
+			and a.id between ${startIndex}+1 and ${startIndex}+${length}
+		</if>
+	 </select>
+ </mapper>

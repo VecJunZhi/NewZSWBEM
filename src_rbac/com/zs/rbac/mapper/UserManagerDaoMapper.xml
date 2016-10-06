@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="com.zs.rbac.dao.UserManagerDao">
+ 	<select id="getUser" parameterType="com.zs.rbac.entity.User" resultType="com.zs.rbac.entity.User">
+	 	SELECT
+		userID,
+		userName,
+		realName,
+		password,
+		mobile,
+		eMail,
+		loginType,
+		uStatus,
+		locked,
+		createTime,
+		lastTime,
+		description into #tmp_table
+		FROM
+			[dbo].[zs_rbac_user]
+		<where>
+			1=1
+			<if test="username !=null and ''!= username">
+ 				and userName like '%${username}%'
+ 			</if>
+ 			<if test="realName !=null and ''!= realName">
+ 				and realName=#{realName}
+ 			</if>
+ 			<if test="password  !=null and ''!= password">
+ 				and password=#{password}
+ 			</if>
+ 			<if test="mobile !=null and ''!= mobile">
+ 				and mobile=#{mobile}
+ 			</if>
+ 			<if test="email !=null and ''!= email">
+ 				and email=#{email}
+ 			</if>
+ 			<if test="loginType  !=null and ''!= loginType">
+ 				and loginType=#{loginType}
+ 			</if>
+ 			<if test="uStatus  !=null and ''!= uStatus">
+ 				and uStatus=#{uStatus}
+ 			</if>
+ 			<if test="locked  !=null and ''!= locked">
+ 				and locked=#{locked}
+ 			</if>
+ 			<if test="createTime  !=null and ''!= createTime">
+ 				and createTime=#{createTime}
+ 			</if>
+ 			<if test="lastTime  !=null and ''!= lastTime">
+ 				and lastTime=#{lastTime}
+ 			</if>
+ 			<if test="description  !=null and ''!= description">
+ 				and description=#{description}
+ 			</if>
+ 			<if test="userID !=null and ''!= userID">
+ 				and userID=#{userID}
+ 			</if>
+		</where>
+		<!-- 不分页 -->
+		<if test="rows ==null or ''== rows"> 
+			SELECT * FROM #tmp_table  
+		</if>
+		<!-- 分页 -->
+		<if test="rows !=null and ''!= rows">
+			select top ${rows} * from #tmp_table where userId not in (select top ${startLength} userId from #tmp_table ORDER BY userId desc)
+		</if>
+		ORDER BY userId desc
+		DROP TABLE #tmp_table 
+ 	</select>
+ 	<select id="getUserByUserExt" parameterType="com.zs.rbac.entity.User" resultType="com.zs.rbac.entity.User">
+ 			SELECT
+				a.userID,
+				a.userName,
+				a.realName
+			FROM
+				[dbo].[zs_rbac_user] a
+			LEFT JOIN zs_user_teamgroup b ON a.userId = b.userId
+		 	WHERE b.id=#{userID}
+	</select>
+ 	<insert id="createUser" parameterType="com.zs.rbac.entity.User">
+ 		INSERT INTO zs_rbac_user (
+			username,
+			RealName,
+			password,
+			Mobile,
+			EMail,
+			LoginType,
+			UStatus,
+			Locked,
+			CreateTime,
+			LastTime,
+			Description
+		)
+		VALUES
+			(#{username},#{realName},#{password},#{mobile},#{email},#{loginType},#{uStatus},#{locked},#{createTime},#{lastTime},#{description})
+ 	</insert>
+ 	<update id="updateUser" parameterType="com.zs.rbac.entity.User">
+ 		UPDATE zs_rbac_user
+ 		<set>
+ 			<if test="username !=null and ''!= username">
+ 				userName=#{username},
+ 			</if>
+ 			<if test="realName !=null and ''!= realName">
+ 				realName=#{realName},
+ 			</if>
+ 			<if test="password  !=null and ''!= password">
+ 				password=#{password},
+ 			</if>
+ 			<if test="mobile !=null and ''!= mobile">
+ 				mobile=#{mobile},
+ 			</if>
+ 			<if test="email !=null and ''!= email">
+ 				email=#{email},
+ 			</if>
+ 			<if test="loginType  !=null and ''!= loginType">
+ 				loginType=#{loginType},
+ 			</if>
+ 			<if test=" uStatus  !=null and (uStatus==0 or uStatus==1)">
+ 				uStatus=#{uStatus},
+ 			</if>
+ 			<if test="locked  !=null  and (locked==true or locked == false)">
+ 				locked=#{locked},
+ 			</if>
+ 			<if test="createTime  !=null and ''!= createTime">
+ 				createTime=#{createTime},
+ 			</if>
+ 			<if test="lastTime  !=null and ''!= lastTime">
+ 				lastTime=#{lastTime},
+ 			</if>
+ 			<if test="description  !=null and ''!= description">
+ 				description=#{description}
+ 			</if>
+ 		</set>
+ 		WHERE userID=#{userID}
+ 	</update>
+ 	<delete id="deleteUser" parameterType="com.zs.rbac.entity.User">
+ 		delete from zs_rbac_user where userID=#{userID}
+ 	</delete>
+ 	<select id="judgeIfExistUserName" parameterType="com.zs.rbac.entity.User" resultType="java.lang.Integer">
+ 		select count(*)   from zs_rbac_user where userName=#{username}
+ 	</select>
+ 	 	<select id="judgeIfExistMobile" parameterType="com.zs.rbac.entity.User" resultType="java.lang.Integer">
+ 		select count(*)   from zs_rbac_user where mobile=#{mobile}
+ 	</select>
+ 	 	<select id="judgeIfExistEmail" parameterType="com.zs.rbac.entity.User" resultType="java.lang.Integer">
+ 		select count(*)   from zs_rbac_user where email=#{email}
+ 	</select>
+ 	<select id="getProjByUserIdOrRoleId" parameterType="com.zs.rbac.entity.UserRole" resultType="com.zs.rbac.entity.Role">
+ 		SELECT  b.ProjGuid AS projGuid,b.RoleID AS roleID,b.RoleName AS roleName FROM [dbo].[zs_rbac_user_role]  a
+		LEFT JOIN [dbo].[zs_rbac_role] b ON a.RoleID =b.RoleID
+		<where>
+			<if test="userID !=0 ">
+				a.UserID=#{userID}
+			</if>
+			<if test="roleID!=0">
+				and a.RoleID=#{roleID};
+			</if>
+		</where>
+ 	</select>
+ </mapper>

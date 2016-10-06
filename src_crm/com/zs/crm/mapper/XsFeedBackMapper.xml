@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zs.crm.dao.XsFeedBackDao" >
+	<!-- 反馈列表 -->
+	<select id="findXsFeedBack" resultType="com.zs.common.entity.ZsUpdateLogEntity">
+		select logSubject, logContent, userName,distinState,logTime
+		from zs_update_log
+		where distinState='1'
+		order by logTime desc;
+	</select>
+	<!-- 发布反馈 -->
+	<insert id="postXsFeedBack" parameterType="com.zs.common.entity.ZsUpdateLogEntity" >
+         insert into zs_update_log
+         <trim prefix="(" suffix=")" suffixOverrides="," >
+           <if test="logSubject!= null" >
+              logSubject,
+           </if>
+      	   <if test="logContent!= null" >
+              logContent,
+      	   </if>
+      	   <if test="userName!= null" >
+              userName,
+      	   </if>
+              logTime,logClasses,distinState
+    	</trim>
+    	<trim prefix="values (" suffix=")" suffixOverrides="," >
+         <if test="logSubject!= null" >
+           #{logSubject},
+         </if>
+         <if test="logContent!= null" >
+           #{logContent},
+         </if>
+         <if test="userName!= null" >
+           #{userName},
+         </if>
+           getDate(),'前台','1'
+        </trim>
+  </insert>
+  
+  
+  <!-- 新增回复 -->
+  <insert id="addXsReplyContent" parameterType="com.zs.common.entity.ZsReplyFeedEntity" >
+         insert into zs_reply_feed
+         <trim prefix="(" suffix=")" suffixOverrides="," >
+           <if test="logTime!= null" >
+              logTime,
+           </if>
+      	   <if test="replyContent!= null" >
+              replyContent,
+      	   </if>
+      	   <if test="replyName!= null" >
+              replyName,
+      	   </if>
+              replyTime,readType
+    	</trim>
+    	<trim prefix="values (" suffix=")" suffixOverrides="," >
+         <if test="logTime!= null" >
+           #{logTime},
+         </if>
+         <if test="replyContent!= null" >
+           #{replyContent},
+         </if>
+         <if test="replyName!= null" >
+           #{replyName},
+         </if>
+           getDate(),'未读'
+        </trim>
+  </insert>
+  <!-- 查询回复 -->
+  <select id="findXsReplyFeed" parameterType="com.zs.common.entity.ZsReplyFeedEntity" resultType="com.zs.common.entity.ZsReplyFeedEntity">
+  		select logTime,replyName,replyContent,replyTime
+  		from zs_reply_feed
+  		where logTime=#{logTime}
+  		order by replyTime desc;
+  </select>
+</mapper>
+
+

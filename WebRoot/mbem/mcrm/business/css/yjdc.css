@@ -1,0 +1,161 @@
+@charset "utf-8";
+/* CSS Document */
+
+ .border-1px{border-width:0;border-bottom-width:1px;-webkit-border-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAYAAADgzO9IAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAACRJREFUeNpivHv37n8GLIAFSjOiif9nYsABSJeA2YHhAIAAAwCMHQWlmEwsxgAAAABJRU5ErkJggg==") 2 2 stretch;}
+
+ .budget {position: relative;}
+ .icon-budget-target-edit {float:right;margin-right:12px;position:relative;top:10px;}
+ .icon-pen {
+    display:block;
+    width:50px;
+    height:50px;
+    background: url(/mbem/mcrm/business/images/orangepen_default.png) no-repeat center;
+    background-size:50px 50px;
+}
+ .icon-pen.edit-active {
+    display:block;
+    width:50px;
+    height:50px;
+    background: url(/mbem/mcrm/business/images/orangepen_focus.png) no-repeat center;
+    background-size:50px 50px;
+}
+ .budget-list.budget-active{background:#eee;}
+ .budget-head {background:#ff7c51;height:50px;}
+ .budget-title{font-size:17px;line-height: 50px;color:white;padding-left:12px;float:left;}
+ .budget-detail {font-size:14px;line-height: 31px;}
+#scrollWrapper {width:100%;overflow:hidden;}
+.scroller{width:300%;}
+.scroll-list {width:100%;float:left;-webkit-box-size:border-box;}
+.scroll-list>li{width:33.333%;float:left;}
+.list-head{width:100%;}
+.budget-list {float:left;padding-top:7px;padding-bottom:15px;padding-left:12px;box-sizing:border-box;}
+.list-num .num-big{color:#FFA851;}
+.list-num .num-small {font-size:13px;color:#666;}
+.num-small::before {
+    content:'/';
+    font-size:13px;
+    color:#666;
+}
+.progress{width:100%;padding-right:50px;box-sizing:border-box;position:relative;margin-top:4px;}
+.bar{height:7px;background:#f6f6f6;border-radius:5px;padding:2px;}
+.inner-bar {background: #ffb973;height:7px;border-radius: 3px;}
+.percent {font-size:13px;position:absolute;right:12px;top:-10px;color:#aaa;}
+.indicator-wrapper {text-align: center;height:35px;}
+ul.indicator {display:inline-block;position:relative;top:8px;}
+.indicator li{float: left;height:8px;width:8px;border-radius: 4px;background:#f6f6f6;margin:0 5px;}
+.indicator li.active{background:#ff7c51;}
+.budget-list:visited {color:#444;}
+.budget-list {text-decoration: none;color:#444;display: block;}
+ .budget-list1 {background:#eee;}
+.budget-list1 {float:left;padding-top:7px;padding-bottom:15px;padding-left:12px;box-sizing:border-box;}
+.budget-list1 {text-decoration: none;color:#444;display: block;}
+.icon-pen1 {    display:block;
+    width:50px;
+    height:50px;
+    background: url(/mbem/mcrm/business/images/orangepen_default.png) no-repeat center;
+    background-size:50px 50px;
+}
+.icon-pen1 {    display:block;
+    width:50px;
+    height:50px;
+    background: url(/mbem/mcrm/business/images/orangepen_focus.png) no-repeat center;
+    background-size:50px 50px;
+}
+.scroll-list1 {width:100%;float:left;-webkit-box-size:border-box;}
+    .down_arr i{right: 0px;left: 4px;background-image: url(/mbem/mcrm/business/images/yhxx_12.png) ;background-repeat:no-repeat;width: 31px;height: 31px;}
+    .key_input{border: 0px;color: #a5a5a5;padding: 5px;text-align: right;}
+    .font-blue{color: #4ea9ff;text-decoration:none;}
+    #wrapper_1 {background: white;margin-bottom: 20px;}
+  .rank-bg{
+                    height:40px;
+                    background:#f0f0f0;
+                }
+                .rank-banner {box-sizing:border-box;padding:0 50px;position: relative;margin-top:-26px;}
+                .rank-title {background:#ffb973;font-size:17px;line-height: 32px;text-align: center;color:white;}
+                .decorate-left {
+                    position: absolute;
+                    left:12px;
+                    width: 38px;
+                    height:32px;
+                    background: url(/mbem/mcrm/business/images/icon_orange_left.png) no-repeat center;
+                    background-size: 38px 32px;
+                }
+                .decorate-right {
+                    position: absolute;
+                    right:12px;
+                    width: 38px;
+                    height:32px;
+                    background: url(/mbem/mcrm/business/images/icon_orange_right.png) no-repeat center;
+                    background-size: 38px 32px;
+                }
+                .rank-by {
+                    float:left;
+                    width:50%;
+                    height:44px;
+                }
+                .rank-by .center {
+                    width:120px;
+                    margin:0 auto;
+                    font-size:16px;
+                    line-height: 42px;
+                    border-bottom:2px solid transparent;
+                }
+                .rank-by.active .center {
+                    color: #ff7c51;
+                    border-bottom: 2px solid #ff7c51;
+                }
+                .my-rank {
+                    font-size: 13px;
+                    text-align: center;
+                    line-height: 40px;
+                    background: #f7f7f7;
+                }
+                .my-sale,.my-rank-num{
+                    color: #ff7c51;
+                    padding:0 3px;
+                }
+                .saw-teeth {
+                    height:10px;
+                    background: url(/mbem/mcrm/business/images/icon_triangle.png) repeat-x;
+                    background-size:10px 5px;
+                }
+				
+				  .rank-table li>div:first-child {width:50px;}
+                    .rank-table li {display: -webkit-flex;display:-webkit-box;:flex;font-size:15px;line-height: 50px;}
+                    .rank-first {
+                        background: url(/mbem/mcrm/business/images/icon_goldmedal.png) no-repeat 12px center;
+                        background-size: 28px 28px;
+                    }
+                    .rank-second {
+                        background: url(/mbem/mcrm/business/images/icon_silvermedal.png) no-repeat 12px center;
+                        background-size: 28px 28px;
+                    }
+                    .rank-third {
+                        background: url(/mbem/mcrm/business/images/icon_bronzemedal.png) no-repeat 12px center;
+                        background-size: 28px 28px;
+                    }
+                    .rank-score {
+                        text-align: right;
+                        padding-right:5%;
+                    }
+                    .rank-default {
+                        font-size: 18px;
+                        color: #777;
+                        text-align: center;
+                    }
+                    .tb-rank-num {
+                        margin-right: 5px;
+                    }
+                    li.not-yunke-team {
+                        font-size: 14px;
+                        color:#888;
+                    }
+                    .rank-special {
+                        background: url(/mbem/mcrm/business/images/icon_star.png) no-repeat center center;
+                        background-size: 14px 14px;
+                    }
+                    li.not-yunke-team  .rank-score{
+                        text-align: left;
+                        padding-left: 12px;
+                    }
+	          

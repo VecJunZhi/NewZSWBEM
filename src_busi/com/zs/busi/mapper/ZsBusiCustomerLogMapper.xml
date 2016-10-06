@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper  namespace="com.zs.busi.log.dao.ZsBusiCustomerLogDao">
+  	<!-- 增加招商客户变更/分配/回收  -->
+ 	<insert id="insertZsCusChangeLog" useGeneratedKeys="true" keyProperty="id" parameterType="com.zs.busi.entity.ZsBusiCustomLogTable" >
+ 		<!-- UPDATE [dbo].[zs_customerlog]
+		SET 
+		 [logType] = '3'
+		 
+		WHERE
+			[id] = '66737'  -->
+ 		INSERT INTO zs_customerlog (cusId, logType, operDate, operator, content, reason, projectId, belongSys,oldOperator) VALUES (#{cusId}, #{logType}, #{operDate}, #{operator}, #{content}, #{reason},#{projectId},#{belongSys},#{oldOperator})
+ 	</insert>
+ 		<!-- 获得客户变更/分配/回收记录 -->
+	<select id="getCusRecordLogByCusId" parameterType="com.zs.busi.entity.ZsBusiCustomLogTable" resultType="com.zs.busi.entity.ZsBusiCustomLogTable" >
+			<!-- select * from zs_customerlog --> 
+			SELECT DISTINCT
+				cusId,
+				logType,
+				operDate,
+				operator,
+				content,
+				reason,
+				projectId,
+				belongSys,
+				oldOperator
+			FROM
+				zs_customerlog
+			<where>
+				cusId=#{cusId}
+				and projectId=#{projectId}
+				and logType=#{logType}
+				and belongSys = #{belongSys}
+			</where>
+			order by operDate desc
+	</select>
+	<!-- 查询指定客户的最后回收原因，最后回收时间， -->
+	<select id="getCusReBackInfoByCusId" parameterType="com.zs.busi.entity.ZsInfoVo" resultType="com.zs.busi.entity.ZsBusiCustomLogTable" >
+			SELECT top 1 cusid ,operDate,content,reason FROM [dbo].[zs_customerlog]  
+			<where>
+				cusId=#{cusId}
+				<if test="logType=='变更记录'">
+					and logType='1'
+				</if>
+				<if test="logType=='分配日志'">
+					and logType='2'
+				</if>
+				<if test="logType=='回收日志'">
+					and logType='3'
+				</if>
+				 ORDER BY operDate DESC;
+			</where>
+	</select>
+	<!-- 查询指定客户的回收次数 -->
+	<select id="getCusReBackCountByCusId" parameterType="com.zs.busi.entity.ZsInfoVo" resultType="Integer" >
+			<!-- SELECT count(*) FROM [dbo].[zs_customerlog]  --> 
+			SELECT count(*) FROM (
+			SELECT DISTINCT 
+				cusId,
+				logType,
+				operDate,
+				operator,
+				content,
+				reason,
+				projectId,
+				belongSys,
+				oldOperator
+			FROM
+				zs_customerlog
+			<where>
+				cusId=#{cusId}
+				<if test="logType=='变更记录'">
+					and logType='1'
+				</if>
+				<if test="logType=='分配日志'">
+					and logType='2'
+				</if>
+				<if test="logType=='回收日志'">
+					and logType='3'
+				</if>
+			</where>
+			)a
+	</select>
+ </mapper>

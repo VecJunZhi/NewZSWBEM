@@ -1,0 +1,651 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper  namespace="com.zs.crm.dao.XsCustomAllocateDao">
+	
+	<sql id="general_Cust">
+		declare @overdueDays int;
+		select @overdueDays=名称 from dbo.zs_词典 where 类别='逾期天数';
+		SELECT * into #xsMAtemp  FROM (SELECT
+			t.cstGUID,
+			cstName,
+			p.mobileTel,
+			p.officeTel,
+			p.homeTel,
+			p.gender,
+			t.gfys,
+			t.gfyt,
+			t.gzfm1,
+			p.email,
+			p.address,
+			p.cardType,
+			p.workAddr,
+			p.birthDate,
+			p.cardID15,
+			t.competitor,
+			t.subMediaName,
+			t.dfNum,
+			p.fax,
+			m.userName,
+			t.userGUID,
+			projGUID,
+			OppSource AS gjfs,
+			status,
+			closedOn,
+			lastDate,
+			nextDate,
+			gfyx,
+			t.createdOn,
+			t.zygw ,
+			t.oppGUID,
+			t.estclosedate,
+			t.oldZygw as oldZygw,
+			t.oldUserGuid as oldUserGuid,
+			t.statusReason
+		FROM
+			s_Opportunity t
+		LEFT JOIN P_Customer p ON p.CstGUID = t.CstGUID
+		LEFT JOIN myUser m ON m.UserGUID = t.UserGUID
+		WHERE
+			NOT EXISTS (
+				SELECT
+					1
+				FROM
+					s_Opportunity
+				WHERE
+					CstGUID = t.CstGUID
+				AND scrm_timestamp_data > t.scrm_timestamp_data
+				<if test="projGUID!=null and ''!=projGUID">
+					and ProjGUID = #{projGUID}
+				</if>
+			)
+			<if test="projGUID!=null and ''!=projGUID">
+				and t.ProjGUID = #{projGUID}
+			</if>
+		) a
+	</sql>
+	<sql id="general_Cust_Condition">
+			<if test="cstName !=null and ''!=cstName">
+ 				and cstName like '%${cstName}%'
+			</if>
+			<if test="mobileTel != null and ''!=mobileTel">
+       			<!-- and mobileTel  like '%${mobileTel}%' -->
+       			and (mobileTel =#{mobileTel} or officeTel=#{mobileTel} or homeTel=#{mobileTel} or fax=#{mobileTel})
+       		</if>
+       		<if test=" userName != null and ''!= userName">
+       			and zygw  like '%${userName}%'
+       		</if>
+       		<if test="userGuid != null and ''!= userGuid">
+       			and userGuid =#{userGuid}
+       		</if> 
+       		<if test="overDays !=null and ''!=overDays">
+       		    and DATEDIFF(DAY,dateadd(DAY, @overdueDays, lastDate),getdate())>=convert(int,substring(#{overDays},1,charindex('-',#{overDays},1)-1))
+ 				and DATEDIFF(DAY,dateadd(DAY, @overdueDays, lastDate),getdate())&lt;=convert(int,substring(#{overDays},charindex('-',#{overDays},1)+1,len(#{overDays})))
+			</if>
+       		<if test=" gfyx != null and ''!= gfyx">
+       			 and charindex(gfyx,#{gfyx},1)>0
+       		</if>
+       		<if test="cstStatus!=null and ''!=cstStatus">
+       			and ( charindex(status,#{cstStatus},1)>0
+       			<if test="invalidReason !=null and ''!=invalidReason">
+	       			or (statusReason in (${invalidReason}) ) 
+	       		</if>
+	       		)
+       		</if>
+       		<if test="startTime!=null and ''!=startTime">
+       			and LastDate &gt;= #{startTime}
+       		</if>
+       		<if test="endTime!=null and ''!=endTime">
+       			and LastDate &lt;= #{endTime}
+       		</if>
+       		<if test="startDays!=null and ''!=startDays">
+       			and DATEDIFF(DAY,dateadd(DAY, @overdueDays, lastDate),getdate()) &gt;= ${startDays}
+       		</if>
+       		<if test="endDays!=null and ''!=endDays">
+       			and DATEDIFF(DAY,dateadd(DAY, @overdueDays, lastDate),getdate()) &lt;= ${endDays} 
+       		</if>
+       		<if test="startCreate!=null and ''!=startCreate">
+       			and CreatedOn &gt;= #{startCreate}
+       		</if>
+       		<if test="endCreate!=null and ''!=endCreate">
+       			and CreatedOn &lt;= #{endCreate}
+       		</if>
+       		<if test="projGUID !=null and ''!= projGUID">
+       			and ProjGUID = #{projGUID}
+       		</if>
+       		<if test="cstGuid != null and ''!=cstGuid">
+	       		and cstGUID=#{cstGuid}
+	       	</if>
+	       	<if test=" oldZygw != null and ''!= oldZygw ">
+	       		and oldZygw=#{oldZygw}
+	       	</if>
+	       	<if test=" oldUserGuid != null and ''!= oldUserGuid ">
+	       		and oldUserGuid=#{oldUserGuid}
+	       	</if>
+	</sql>
+	<sql id="general_Cust_GroupBy">
+		
+	</sql>
+	
+	<!-- 获得逾期客户/无效客户/跟进中客户 的总数目-->
+	<select id="getZsCustCountDao" parameterType="com.zs.crm.web.vo.XsCustomersManagerVo"  resultType="Integer">
+			<include refid="general_Cust"/>
+	 		<where>
+	 			<if test="desc=='逾期客户'">
+	 				 
+	 				 <!-- DATEDIFF(DAY, DATEADD(day, @overdueDays, LastDate), GETDATE())&gt;0 -->
+	 				DATEDIFF(DAY, lastDate, GETDATE()) >@overdueDays
+	 				and status not in ('签约','认购')
+	 				AND Zygw not in('公共客户','垃圾箱客户')
+	 			</if>
+	 			 <if test="desc=='无效客户'">
+	 				estclosedate is not NULL AND estclosedate !=''
+	 			</if>
+	 			<if test="desc=='跟进中客户'">
+	 				<!-- Zygw !='公共客户' -->1=1
+	 				<!-- AND Zygw not in('公共客户','垃圾箱客户') -->
+	 				and UserGUID not in('48ABB5BD-09F8-4681-96F9-ABB9CA3DF159','A65B4D26-239E-E511-939D-005056C00008')
+	 			</if>
+	 			<include refid="general_Cust_Condition"/>
+	 		</where>
+			<include refid="general_Cust_GroupBy"/>
+	 		select count(*) from #xsMAtemp
+			drop table #xsMAtemp;
+	</select>
+	 <!-- 获得/公共客户/垃圾箱客户 的总共数目 -->
+	 <select id="getZsCustPubDupCountDao" parameterType="com.zs.crm.web.vo.XsCustomersManagerVo"  resultType="Integer">
+			<include refid="general_Cust"/>
+			<where>
+				<if test=" desc =='公共客户'">
+					Zygw ='公共客户'
+				</if>
+				<if test="desc=='垃圾箱'">
+					Zygw  = '垃圾箱客户'
+				</if>
+				<include refid="general_Cust_Condition"/>
+			</where>
+			<include refid="general_Cust_GroupBy"/>
+			select count(*)  from #xsMAtemp
+			drop table #xsMAtemp;
+	 </select>
+	 
+	<!-- 获得逾期客户 -->
+	<sql id="getZsOverdueCustInfo">
+			<!-- declare @overdueDays int;
+			select @overdueDays=名称 from dbo.zs_词典 where 类别='逾期天数'; -->
+			<include refid="general_Cust"/>
+	 		<where>
+	 			<!-- Zygw !='公共客户' -->
+	 			<!--  DATEDIFF(DAY, DATEADD(day, @overdueDays, LastDate), GETDATE())&gt;0 -->
+	 			DATEDIFF(DAY, lastDate, GETDATE()) >@overdueDays
+	 			and status not in ('签约','认购')
+	 			AND Zygw not in('公共客户','垃圾箱客户')
+	       		<include refid="general_Cust_Condition"/>
+	 		</where>
+			<include refid="general_Cust_GroupBy"/>
+	</sql>
+	<select id="getZsOverdueCustInfoDao" parameterType="com.zs.crm.web.vo.XsCustomersManagerVo" resultType="com.zs.crm.entity.XsCustomersManagerEntity">
+	 		<include refid="getZsOverdueCustInfo"/>
+	 		select * ,DATEDIFF(DAY, DATEADD(day, @overdueDays, lastDate), GETDATE()) AS overDays into #xsTemp from #xsMAtemp
+	 		<if test="cstGuid ==null or cstGuid ==''">
+		 		<if test="length ==0 ">
+		 			select  *  from #xsTemp
+		 		</if>
+		 		<if test="length !=0 ">
+			 		select TOP ${length} * from #xsTemp
+					<where>
+						<if test="sortName !=null and ''!=sortName">
+						cstGUID NOT IN ( SELECT TOP ${startIndex} cstGUID FROM #xsTemp ORDER BY ${sortName} ${sortDir},cstGUID)
+						ORDER BY ${sortName} ${sortDir},cstGUID
+						</if>
+						<if test="sortName ==null or ''==sortName">
+							1=1 
+							ORDER BY userName DESC
+						</if>
+					</where>
+				</if>
+			</if>
+			<if test="cstGuid !=null and ''!=cstGuid ">
+				select  *  from #xsTemp
+			</if>
+			drop table #xsMAtemp;
+			drop table #xsTemp;
+	</select>
+	<!-- 获得逾期客户的按照业务员统计数 -->
+	<select id="getZsOverdueCustCountByYwy" parameterType="com.zs.crm.web.vo.XsCustomersManagerVo" resultType="com.zs.crm.entity.XsCustomersManagerEntity">
+		<include refid="getZsOverdueCustInfo"/>
+		select userName,userGuid,count(cstGUID) AS countNum  from #xsMAtemp GROUP BY userName,userGuid ORDER BY userName DESC
+		drop table #xsMAtemp;
+	</select>
+	<!-- 获得无效客户 -->
+	<sql id="getZsCusInvalid">
+			<include refid="general_Cust"/>
+	 		<where>
+	 			estclosedate is not NULL AND estclosedate !='' 
+	 			<include refid="general_Cust_Condition"/>
+	 		</where>
+	 		<include refid="general_Cust_GroupBy"/>
+	</sql>
+	<select id="getZsCusInvalidDao" parameterType="com.zs.crm.web.vo.XsCustomersManagerVo" resultType="com.zs.crm.entity.XsCustomersManagerEntity">
+			<include refid="getZsCusInvalid"/>
+			<if test="cstGuid ==null or cstGuid ==''">
+				<if test="length ==0 ">
+					SELECT  *  FROM #xsMAtemp
+				</if>
+				<if test="length !=0 ">
+					select TOP ${length} *  from #xsMAtemp
+					<where>
+						<if test="sortName !=null and ''!=sortName">
+						cstGUID NOT IN ( SELECT TOP ${startIndex} cstGUID FROM #xsMAtemp ORDER BY ${sortName} ${sortDir},cstGUID)
+						ORDER BY ${sortName} ${sortDir},cstGUID
+						</if>
+						<if test="sortName ==null or ''==sortName">
+							1=1 
+							ORDER BY userName DESC
+						</if>
+					</where>
+				</if>
+			</if>
+			<if test="cstGuid !=null and ''!=cstGuid ">
+				select  *  from #xsMAtemp
+			</if>
+			drop table #xsMAtemp;
+	</select>
+	<!-- 获得无效客户的按照业务员统计数 -->
+	<select id="getZsCusInvalidCustCountByYwy" parameterType="com.zs.crm.web.vo.XsCustomersManagerVo" resultType="com.zs.crm.entity.XsCustomersManagerEntity">
+		<include refid="getZsCusInvalid"/>
+		select userName,userGuid,count(CstGUID) AS countNum  from #xsMAtemp GROUP BY userName,userGuid ORDER BY userName DESC
+		drop table #xsMAtemp;
+	</select>
+	<!-- 获得跟进中客户 -->
+	<sql id="getZsCustFollowing">
+			<include refid="general_Cust"/>
+	 		<where>
+	 			<!-- Zygw !='公共客户' -->1=1
+	 			<!-- AND Zygw not in('公共客户','垃圾箱客户') -->
+	 			and UserGUID not in('48ABB5BD-09F8-4681-96F9-ABB9CA3DF159','A65B4D26-239E-E511-939D-005056C00008')
+	 			<include refid="general_Cust_Condition"/>
+	 		</where>
+			<include refid="general_Cust_GroupBy"/>
+	</sql>
+ 	<select id="getZsCustFollowingDao" parameterType="com.zs.crm.web.vo.XsCustomersManagerVo" resultType="com.zs.crm.entity.XsCustomersManagerEntity">
+		<include refid="getZsCustFollowing"/>
+		<if test="cstGuid != null and ''!= cstGuid">
+			select *  from #xsMAtemp
+		</if>
+		<if test="cstGuid == null or ''== cstGuid">
+			<if test="length ==0 ">
+				SELECT  *  FROM #xsMAtemp
+			</if>
+			<if test="length !=0">
+				SELECT TOP ${length} *  FROM #xsMAtemp
+				WHERE cstGUID NOT IN ( SELECT TOP ${startIndex} cstGUID FROM #xsMAtemp ORDER BY ${sortName} ${sortDir},cstGUID)
+				ORDER BY ${sortName} ${sortDir},cstGUID
+				drop table #xsMAtemp;
+			</if>
+		</if>
+	</select>
+	<!-- 获得跟进中客户的按照业务员统计数 -->
+	<select id="getZsCustFollowingCustCountByYwy" parameterType="com.zs.crm.web.vo.XsCustomersManagerVo" resultType="com.zs.crm.entity.XsCustomersManagerEntity">
+		<include refid="getZsCustFollowing"/>
+		select userName,userGuid,count(CstGUID) AS countNum  from #xsMAtemp GROUP BY userName,userGuid ORDER BY userName DESC
+		drop table #xsMAtemp;
+	</select>
+	<!-- 获得公共客户 -->
+	<select id="getZsCustPublicDao"  parameterType="com.zs.crm.web.vo.XsCustomersManagerVo" resultType="com.zs.crm.entity.XsCustomersManagerEntity">
+			<include refid="general_Cust"/>
+			<where>
+				Zygw ='公共客户'
+				<include refid="general_Cust_Condition"/>
+			</where>
+			<include refid="general_Cust_GroupBy"/>
+			select * into #publicTemp from #xsMAtemp a 
+			left join (select a.operDate as rebackDate,a.reason as rebackReason,a.cusid,b.times as rebackNums from zs_customerlog a right join
+			(select cusId,max(id) as id,count(*) as times from zs_customerlog where logType=3 and belongSys='xs' group by cusId ) as b on a.cusId=b.cusId and a.id = b.id) as c
+		 	on convert(VARCHAR(50),a.cstGUID) = c.cusid
+			where 1=1
+			<if test="rebackReason!=null and ''!=rebackReason">
+				and rebackReason in (${rebackReason}) 
+			</if>
+			<if test="cstGuid ==null or cstGuid ==''">
+				<if test="length ==0 ">
+					SELECT  *  FROM #publicTemp
+				</if>
+				<if test="length !=0 ">
+					select TOP ${length} *  from #publicTemp
+					<if test="sortName !=null and ''!=sortName">
+						<where>
+						cstGUID NOT IN ( SELECT TOP ${startIndex} cstGUID FROM #publicTemp ORDER BY ${sortName} ${sortDir},cstGUID)
+						ORDER BY ${sortName} ${sortDir},cstGUID
+						</where>
+					</if>
+				</if>
+			</if>
+			<if test="cstGuid !=null and ''!=cstGuid ">
+				select  *  from #publicTemp
+			</if>
+			drop table #xsMAtemp;
+			drop table #publicTemp;
+	</select>
+	 <!-- 获得垃圾箱客户 -->
+	<select id="getZsCustDusBinDao"  parameterType="com.zs.crm.web.vo.XsCustomersManagerVo" resultType="com.zs.crm.entity.XsCustomersManagerEntity">
+			<include refid="general_Cust"/>
+			<where>
+				 Zygw ='垃圾箱客户' 
+				 <!-- AND  s.Status != '丢失' -->
+	       		<include refid="general_Cust_Condition"/>
+			</where>
+			<include refid="general_Cust_GroupBy"/>
+			<if test="cstGuid ==null or cstGuid ==''">
+				select TOP ${length} *  from #xsMAtemp
+				<if test="sortName !=null and ''!=sortName">
+					<where>
+						cstGUID NOT IN ( SELECT TOP ${startIndex} cstGUID FROM #xsMAtemp ORDER BY ${sortName} ${sortDir})
+						ORDER BY ${sortName} ${sortDir}
+					</where>
+				</if>
+			</if>
+			<if test="cstGuid !=null and ''!=cstGuid ">
+				select  *  from #xsMAtemp
+			</if>
+			drop table #xsMAtemp;
+	</select>
+	<!-- 根据客户id获得客户的基本信息 -->
+	<select id="getCustomInfoByCusId" parameterType="com.zs.crm.web.vo.XsCustomersManagerVo" resultType="com.zs.crm.entity.XsCustomersManagerEntity">
+      		SELECT top 1 cstName,homeTel,mobileTel,gender,ageGroup,homeArea,workArea,industry,marriage,nativePlace,family,email,gfyt,gzfm1,mainMediaName,gfyx,o.createdOn,o.modifyOn,o.modifyBy FROM p_Customer p
+			LEFT JOIN p_CstAttribute s ON s.CstGUID=p.CstGUID
+			LEFT JOIN s_Opportunity o ON o.CstGUID=p.CstGUID
+      		<where>
+	       		<if test="cstGuid != null">
+	       			and p.cstguid=#{cstGuid}
+	       		</if>
+	       		<if test="cstName !=null">
+	       			and p.cstName like '%${cstName}%'
+	       		</if>
+	       		<if test="mobileTel != null">
+	       			and p.mobileTel  like '%${mobileTel}%'
+	       		</if>
+	       		<if test="projGUID !=null and ''!= projGUID">
+	       			and o.ProjGUID = #{projGUID}
+	       		</if>
+	       </where>
+	 		ORDER BY p.cstGuid  DESC
+	</select>
+
+	<!-- 获得公司置业顾问的列表 -->
+	<select id="getZsEmployeeList" parameterType="com.zs.crm.web.vo.XsCustomersManagerVo" resultType="com.zs.crm.entity.XsCustomersManagerEntity">
+ 			<!-- SELECT a.UserName AS userName,a.MobilePhone AS mobileTel,a.CreatedOn as createdOn ,a.UserGUID AS userGuid into #xsMAtemp FROM myUser a -->
+ 			SELECT
+				a.UserName AS userName,
+				a.MobilePhone AS mobileTel,
+				a.CreatedOn AS createdOn,
+				a.UserGUID AS userGuid into #xsMAtemp
+			FROM
+				e_myUser a
+			WHERE
+				a.DefaultStationName = '置业顾问'
+			AND a.UserCode != 'test'
+			AND a.UserCode != 'lajx'
+		 		<if test="userName !=null and ''!= userName">
+		 			and a.userName  like '%${userName}%'
+		 		</if>
+		 		<if test="mobileTel !=null and ''!= mobileTel">
+		 			and a.MobilePhone  like '%${mobileTel}%'
+		 		</if>
+		 		<if test="userGuid!=null and ''!=userGuid">
+		 			and a.UserGUID = #{userGuid}
+		 		</if>
+		 		<if test="oppGUID !=null and ''!= oppGUID">
+		 			and a.UserGUID = (select top 1 UserGUID from s_Opportunity where OPPGUID=#{oppGUID} ORDER BY LastDate,scrm_timestamp_data )
+		 		</if>
+	 		select *  from #xsMAtemp
+			<!-- <where>
+				createdOn IN (
+					SELECT TOP ${length} createdOn FROM #xsMAtemp
+					WHERE createdOn NOT IN ( SELECT TOP ${startIndex} createdOn FROM #xsMAtemp ORDER BY ${sortName}  ${sortDir})
+					ORDER BY ${sortName}  ${sortDir} )
+				ORDER BY ${sortName}  ${sortDir}
+			</where> -->
+			drop table #xsMAtemp;
+ 	</select >
+ 	<select id="getZygwByoppGUID" parameterType="com.zs.crm.web.vo.XsCustomersManagerVo" resultType="com.zs.crm.entity.XsCustomersManagerEntity">
+ 		select  UserGUID  AS userGuid, Zygw as zygw from s_Opportunity where OPPGUID=#{oppGUID}
+ 	</select>
+ 	<!-- (分配) -->
+ 	<update id="allocateCustomers"  parameterType="com.zs.crm.web.vo.XsCustomersManagerVo" >
+ 			IF NOT EXISTS (SELECT CstAttachGUID FROM p_CstAttach WHERE BUGUID = #{buGUID} AND ProjGUID = #{projGUID}
+			AND UserGUID = #{userGuid} AND CstGUID = #{cstGuid}) 
+			BEGIN     
+			INSERT INTO p_CstAttach 
+			(CstAttachGUID,BUGUID,ProjGUID,UserGUID,CstGUID)     
+			VALUES(dbo.SeqNewId(), #{buGUID}, #{projGUID},#{userGuid},#{cstGuid})END 
+			DELETE dbo.p_CstAttach 
+			WHERE BUGUID = #{buGUID} AND ProjGUID =#{projGUID} AND UserGUID = #{userGUID2} AND CstGUID =#{cstGuid}
+			
+			DECLARE @fpNum VARCHAR(10)
+			SET @fpNum=(SELECT FpNum FROM s_Opportunity WHERE OppGUID IN (select oppguid from s_opportunity where cstGUID=#{cstGuid}))
+			UPDATE s_Opportunity 
+			SET UserGUID = #{userGuid},Zygw=(select userName from myUser where userGuid=#{userGuid}), FpNum = FpNum + 1,
+				FprGUID = #{modifybyGuid},OldUserGUID=#{userGUID2},
+				lastDate= CONVERT(VARCHAR(50), GETDATE() , 121),nextDate=CONVERT(VARCHAR(10),DATEADD(DAY, 7, GETDATE()),121), Fpr='1', FpTime=GETDATE(),estclosedate=NULL,StatusReason='0'
+			WHERE oppGUID=#{oppGUID};
+			<!-- OppGUID IN (select oppguid from s_opportunity where cstGUID=#{cstGuid}) -->
+ 	</update>
+ 	<!-- (回收) -->
+ 	<update id="reBackCustomers"  parameterType="com.zs.crm.web.vo.XsCustomersManagerVo">
+ 			<!-- UPDATE s_Opportunity  SET userguid=(SELECT userguid FROM myUser WHERE username='公共客户'), zygw='公共客户' WHERE cstguid=#{cstGuid}  -->
+ 			UPDATE s_Opportunity  
+ 			<set>
+ 				<if test="oldZygw !=null and ''!= oldZygw">
+ 					oldzygw=#{oldZygw},
+ 				</if>
+ 				<if test="oldUserGuid !=null and ''!= oldUserGuid ">
+ 					oldUserGuid=#{oldUserGuid},
+ 				</if>
+ 					userguid=(SELECT userguid FROM myUser WHERE username='公共客户'),zygw='公共客户',estclosedate=NULL
+ 			</set>
+ 			<!-- 下面这句暂时屏蔽 -->
+ 			 WHERE 
+ 			 <!--1!=isnull((
+			select 1 from( 
+			Select s_Trade2Cst.CstGUID
+			         from s_Trade2Cst,s_Order 
+			         where s_Trade2Cst.TradeGUID=s_Order.TradeGUID 
+			         And OrderType = '认购' and  status = '激活' 
+			         union 
+			         Select s_Trade2Cst.CstGUID 
+			         from s_Trade2Cst,s_Contract 
+			         where s_Trade2Cst.TradeGUID=s_Contract.TradeGUID 
+			         And status = '激活')a 
+			         where CstGUID=#{cstGuid}),0) AND-->
+			    CstGUID=#{cstGuid} and OppGUID=#{oppGUID}
+ 			<if test="projGUID !=null and ''!= projGUID">
+	       			and ProjGUID = #{projGUID}
+			</if>
+ 	</update>
+ 	
+ 	<!-- 移至垃圾箱 -->
+ 	<update id="dusbinCustomers"  parameterType="com.zs.crm.web.vo.XsCustomersManagerVo">
+ 			UPDATE s_Opportunity  SET userguid=(SELECT userguid FROM myUser WHERE username='垃圾箱客户'),zygw='垃圾箱客户' WHERE cstguid=#{cstGuid} and OppGUID=#{oppGUID}
+ 			<if test="projGUID !=null and ''!= projGUID">
+	       			and ProjGUID = #{projGUID}
+			</if>
+ 	</update>
+	<!-- 查询满足自动回收的逾期的客户 -->
+	<select id="autoRebackOverCustomer"  parameterType="com.zs.crm.web.vo.XsCustomersManagerVo" resultType="com.zs.crm.entity.XsCustomersManagerEntity">
+			declare @overdueRebackDays int;
+			<!-- select @overdueDays=名称 from dbo.zs_词典 where 类别='逾期天数'; -->
+			select @overdueRebackDays=名称 from dbo.zs_词典 where 类别='逾期回收天数';
+			
+			<!--SELECT a.CstGUID as cstGUID,a.CstName AS cstName,a.MobileTel AS mobileTel,b.LastDate as gjDate,b.Zygw AS userName,b.OppSource AS gjfs ,b.Gfyx AS gfyx ,b.Status AS status,b.OppGUID AS oppGUID  FROM dbo.p_Customer a
+			LEFT JOIN dbo.s_Opportunity  b ON b.CstGUID=a.CstGUID
+	 		<where>
+	 			 DATEDIFF(DAY, DATEADD(day, @overdueDays, b.LastDate), GETDATE())>@overdueRebackDays AND b.Status not in('签约','认购')  
+	 			 AND b.UserGUID &lt;&gt;(SELECT UserGUID FROM myUser WHERE UserName='公共客户')
+	 			 AND b.UserGUID &lt;&gt;(SELECT UserGUID FROM myUser WHERE UserName='垃圾箱客户')
+	 			 
+	 			 AND b.ProjGUID = #{projGUID}
+	 		</where>  -->
+	 		<include refid="general_Cust"/>
+	 		<where>
+	 			<!-- Zygw !='公共客户' -->
+	 			<!--  DATEDIFF(DAY, DATEADD(day, @overdueDays, LastDate), GETDATE())&gt;0 -->
+	 			<!-- DATEDIFF(DAY, lastDate, GETDATE()) >@overdueDays -->
+	 			DATEDIFF(DAY, DATEADD(day, @overdueDays, LastDate), GETDATE())>@overdueRebackDays
+	 			and status not in ('签约','认购')
+	 			AND Zygw not in('公共客户','垃圾箱客户')
+	       		<include refid="general_Cust_Condition"/>
+	 		</where>
+			<include refid="general_Cust_GroupBy"/>	
+			select * ,DATEDIFF(DAY, DATEADD(day, @overdueDays, lastDate), GETDATE()) AS overDays into #xsTemp from #xsMAtemp	
+			select  *  from #xsTemp
+			drop table #xsMAtemp;
+			drop table #xsTemp;
+	</select>
+	<!-- 查询满足自动回收的无效的客户 -->
+	<select id="autoRebackInvalidCustomer" parameterType="com.zs.crm.web.vo.XsCustomersManagerVo" resultType="com.zs.crm.entity.XsCustomersManagerEntity">
+			<!-- SELECT a.CstGUID as cstGUID,a.CstName AS cstName,a.MobileTel AS mobileTel,b.LastDate as gjDate,b.Zygw AS userName,b.OppSource AS gjfs ,b.Gfyx AS gfyx ,b.Status AS status,b.OppGUID AS oppGUID into #xsMAtemp FROM dbo.p_Customer a
+			LEFT JOIN dbo.s_Opportunity  b ON b.CstGUID=a.CstGUID
+	 		<where>
+	 			  estclosedate is not NULL AND estclosedate !=''
+	 			  AND b.ProjGUID = #{projGUID}
+	 		</where> -->
+	 		<include refid="getZsCusInvalid"/>
+			select  *  from #xsMAtemp
+			drop table #xsMAtemp;
+	</select> 
+	
+	<update id="updateXsBasicInfo" parameterType="com.zs.crm.web.vo.XsCustomersManagerVo">
+		UPDATE dbo.p_Customer 
+		<set>
+			<if test="cstName != null and ''!=cstName">
+				cstName=#{cstName},
+			</if>
+			<if test="mobileTel != null and ''!=mobileTel">
+				mobileTel=#{mobileTel},
+			</if>
+			<if test="homeTel != null and ''!=homeTel">
+				homeTel=#{homeTel},
+			</if>
+			<if test="officeTel != null and ''!=officeTel">
+				officeTel=#{officeTel},
+			</if>
+			<if test="fax != null and ''!=fax">
+				fax=#{fax}
+			</if>
+		</set>
+		where cstGUID=#{cstGuid}
+	</update>
+	<update id="autoUpdateOppStatus" parameterType="com.zs.crm.web.vo.XsCustomersManagerVo">
+		<!-- update s_Opportunity 
+		set status=yy.RoomStatus 
+		from s_Opportunity 
+		INNER JOIN ( 
+			select * from ( 
+				select p.CstName,MobileTel,p.CstGUID,opp.Status,y.RoomStatus from p_Customer p 
+				INNER JOIN ( 
+				select * from s_Opportunity t 
+				where NOT EXISTS ( SELECT 1 FROM s_Opportunity WHERE CstGUID = t.CstGUID AND scrm_timestamp_data > t.scrm_timestamp_data )) 
+				opp ON opp.CstGUID=p.CstGUID 
+				INNER JOIN ( 
+				select CstAllGUID,RoomStatus,tr.ProjGUID from s_Trade tr 
+				LEFT JOIN p_Room r ON r.RoomGUID=tr.RoomGUID 
+				where HuXing not in ('车位','地下室') 
+				AND tr.TradeStatus='激活')y ON y.CstAllGUID=p.CstGUID 
+				AND y.ProjGUID='8FFF2136-61EA-E411-BAAF-FCAA145C42F2'
+			)a where Status &lt;&gt;RoomStatus
+		) yy ON yy.CstGUID=s_Opportunity.CstGUID -->
+		select * into #tr 
+			from ( 
+			select p.CstName,MobileTel,p.CstGUID,opp.Status,y.RoomStatus from p_Customer p 
+			LEFT JOIN ( 
+			select * from s_Opportunity t 
+			where NOT EXISTS ( SELECT 1 FROM s_Opportunity WHERE CstGUID = t.CstGUID AND scrm_timestamp_data > t.scrm_timestamp_data 
+			<if test="projGUID != null and ''!= projGUID">
+				and ProjGUID = #{projGUID}
+			</if>
+			)
+			<if test="projGUID != null and ''!= projGUID">
+				and ProjGUID = #{projGUID}
+			</if>
+			) 
+			opp ON opp.CstGUID=p.CstGUID 
+			INNER JOIN ( 
+			select 
+			a.TradeStatus,a.RoomStatus,b.CstAllGUID,a.RoomGUID,a.ProjGUID 
+			
+			from 
+			(select ProjGUID,TradeStatus,RoomGUID,RoomStatus,cstallguid=convert(xml,'&lt;root&gt;&lt;v&gt;'+replace(CstAllGUID,';','&lt;/v&gt;&lt;v&gt;')+'&lt;/v&gt;&lt;/root&gt;') from s_Trade)a 
+			outer apply 
+			(select CstAllGUID=C.v.value('.','nvarchar(100)') from a.cstallguid.nodes('/root/v')C(v))b 
+			LEFT JOIN p_Room r ON r.RoomGUID=a.RoomGUID 
+			where TradeStatus='激活' 
+			AND HuXing not in ('车位','地下室') 
+			GROUP BY a.TradeStatus,a.RoomStatus,b.CstAllGUID,a.RoomGUID,a.ProjGUID)y ON y.CstAllGUID=p.CstGUID 
+			<if test="projGUID != null and ''!= projGUID">
+				and y.ProjGUID = #{projGUID}
+			</if>
+			<!-- AND y.ProjGUID='8FFF2136-61EA-E411-BAAF-FCAA145C42F2' -->
+			)a 
+			select  cstGuid,status,roomStatus into #hr from #tr  where Status&lt;&gt;RoomStatus 
+			
+			UPDATE s_Opportunity SET status=yy.roomstatus FROM s_Opportunity INNER JOIN #hr yy ON yy.CstGUID=s_Opportunity.CstGUID
+			drop table #tr
+			drop table #hr
+	</update>
+	<select id="selectAutoUpdateOppStatus"  resultType="com.zs.crm.entity.XsCustomersManagerEntity" parameterType="com.zs.crm.web.vo.XsCustomersManagerVo">
+		<!-- SELECT s_Opportunity.cstGuid,s_Opportunity.status,yy.roomStatus from s_Opportunity 
+		INNER JOIN ( 
+			select * from ( 
+				select p.CstName,MobileTel,p.CstGUID,opp.Status,y.RoomStatus from p_Customer p 
+				INNER JOIN ( 
+				select * from s_Opportunity t 
+				where NOT EXISTS ( SELECT 1 FROM s_Opportunity WHERE CstGUID = t.CstGUID AND scrm_timestamp_data > t.scrm_timestamp_data )) 
+				opp ON opp.CstGUID=p.CstGUID 
+				INNER JOIN ( 
+				select CstAllGUID,RoomStatus,tr.ProjGUID from s_Trade tr 
+				LEFT JOIN p_Room r ON r.RoomGUID=tr.RoomGUID 
+				where HuXing not in ('车位','地下室') 
+				AND tr.TradeStatus='激活')y ON y.CstAllGUID=p.CstGUID 
+				AND y.ProjGUID='8FFF2136-61EA-E411-BAAF-FCAA145C42F2'
+			)a where Status &lt;&gt; RoomStatus
+		) yy ON yy.CstGUID=s_Opportunity.CstGUID -->
+		select * into #tr 
+			from ( 
+			select p.CstName,MobileTel,p.CstGUID,opp.Status,y.RoomStatus from p_Customer p 
+			LEFT JOIN ( 
+			select * from s_Opportunity t 
+			where NOT EXISTS ( SELECT 1 FROM s_Opportunity WHERE CstGUID = t.CstGUID AND scrm_timestamp_data > t.scrm_timestamp_data 
+			<if test="projGUID != null and ''!= projGUID">
+				and ProjGUID = #{projGUID}
+			</if>
+			)
+			<if test="projGUID != null and ''!= projGUID">
+				and ProjGUID = #{projGUID}
+			</if>
+			) 
+			opp ON opp.CstGUID=p.CstGUID 
+			INNER JOIN ( 
+			select 
+			a.TradeStatus,a.RoomStatus,b.CstAllGUID,a.RoomGUID,a.ProjGUID 
+			
+			from 
+			(select ProjGUID,TradeStatus,RoomGUID,RoomStatus,cstallguid=convert(xml,'&lt;root&gt;&lt;v&gt;'+replace(CstAllGUID,';','&lt;/v&gt;&lt;v&gt;')+'&lt;/v&gt;&lt;/root&gt;') from s_Trade)a 
+			outer apply 
+			(select CstAllGUID=C.v.value('.','nvarchar(100)') from a.cstallguid.nodes('/root/v')C(v))b 
+			LEFT JOIN p_Room r ON r.RoomGUID=a.RoomGUID 
+			where TradeStatus='激活' 
+			AND HuXing not in ('车位','地下室') 
+			GROUP BY a.TradeStatus,a.RoomStatus,b.CstAllGUID,a.RoomGUID,a.ProjGUID)y ON y.CstAllGUID=p.CstGUID 
+			<if test="projGUID != null and ''!=projGUID">
+				and y.ProjGUID = #{projGUID}
+			</if>
+			<!-- AND y.ProjGUID='8FFF2136-61EA-E411-BAAF-FCAA145C42F2' -->
+			)a 
+			select cstGuid,status,roomStatus from #tr 
+			where Status&lt;&gt;RoomStatus 
+			drop table #tr
+	</select>
+	
+	
+	
+</mapper>

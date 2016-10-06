@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper  namespace="com.zs.crm.dao.XsfollowInfoDao">
+	 <select id="getXsCustInfoDao" resultType="com.zs.crm.entity.XsCustomersManagerEntity" parameterType="com.zs.crm.web.vo.XsCustomersManagerVo">
+	 	<!-- SELECT b.id,a.CstGUID as cstGUID,a.CstName AS cstName,a.MobileTel AS mobileTel,c.userName,max(LastDate)as lastDate into #xsMStemp
+		FROM p_Customer a
+		INNER JOIN p_CstAttach b ON b.CstGUID = A.CstGUID
+		INNER JOIN MyUser c ON c.UserGUID = b.UserGUID
+		INNER JOIN s_Opportunity d ON d.CstGUID = A.CstGUID
+	 	<where>
+	 		<if test="projGUID !=null and ''!=projGUID">
+	 			b.ProjGUID =#{projGUID}
+	 		</if>
+	 		<if test="userName !=null and ''!=userName">
+	 			AND c.UserName =#{userName}
+	 		</if>
+			<if test="cstName !=null and ''!=cstName">
+	 			AND CstName LIKE '%${cstName}%'
+	 		</if>
+	 		<if test="mobileTel !=null and ''!=mobileTel">
+	 			AND MobileTel LIKE '%${mobileTel}%'
+	 		</if>
+		</where>
+		GROUP BY b.id,a.CstGUID,a.CstName,a.MobileTel,c.userName
+	 	select * from #xsMStemp 
+	 	<where>
+	 		id IN (
+					SELECT TOP ${length} id FROM #xsMStemp
+					WHERE id NOT IN ( SELECT TOP ${startIndex} id FROM #xsMStemp ORDER BY ${sortName}  ${sortDir})
+					ORDER BY ${sortName}  ${sortDir} )
+			ORDER BY ${sortName}  ${sortDir} 
+	 	</where>
+	 	DROP TABLE #xsMStemp -->
+	 	
+	 	
+	 	select 
+		CstName,Tel as mobileTel,GjContent,UserName,Gjfs,GjDate,max(scdate) AS scdate,ProjGUID,UserGUID
+		into #temp01 
+		from ( 
+		select sp.CstGUID, 
+		     p1.CstName, 
+		     (CASE WHEN ISNULL(OfficeTel,'')='' THEN '' ELSE '(0)' + OfficeTel + CHAR(13) + CHAR(10) END ) + 
+		     (CASE WHEN ISNULL(HomeTel,'')='' THEN '' ELSE '(H)'+ HomeTel + CHAR(13) + CHAR(10) END ) + 
+		     (CASE WHEN ISNULL(MobileTel,'')='' THEN '' ELSE '(M)'+ MobileTel + CHAR(13) + CHAR(10) END ) AS Tel, 
+		     p2.GjContent, 
+		     sp.Zygw, 
+		     sp.UserGUID,
+		     u.UserName, 
+		     p2.GjDate, 
+		     p2.Gjfs, 
+		     sp.ProjGUID, 
+		     p2.scrm_timestamp_data as scdate 
+		from s_Opportunity sp 
+		left JOIN P_Customer p1 ON p1.CstGUID=sp.CstGUID 
+		left JOIN s_Opp2Gjjl p2 ON p2.OppGUID=sp.OppGUID 
+		LEFT JOIN MyUser u ON u.UserGUID=sp.UserGUID 
+		where not exists 
+		(select 1 
+		from s_Opportunity 
+		where s_Opportunity.CstGUID=sp.CstGUID 
+		and s_Opportunity.scrm_timestamp_data>sp.scrm_timestamp_data))a 
+		where 1=1
+		<if test="projGUID!=null and ''!=projGUID">
+			and ProjGUID = #{projGUID} 
+		</if>
+		<if test="startTime!=null and ''!=startTime">
+			and GjDate &gt;= #{startTime}
+		</if>
+		<if test="endTime!=null and ''!=endTime">
+			and GjDate &lt;= #{endTime}
+		</if>
+		<if test="cstName!=null and ''!=cstName">
+			and CstName like '%${cstName}%'
+		</if>
+		<if test="mobileTel!=null and ''!=mobileTel">
+			and Tel like '%${mobileTel}%'
+			<!-- and (p.MobileTel like '%${mobileTel}%' or p.HomeTel like '%${mobileTel}%' or p.OfficeTel like '%${mobileTel}%')  -->
+		</if>
+		<if test="userName!=null and ''!=userName">
+			and Zygw = #{userName}
+		</if>
+		<if test="userGuid!=null and ''!=userGuid">
+			and UserGUID = #{userGuid}
+		</if>
+		group by CstName,Tel,GjContent,Zygw,Gjfs,GjDate,ProjGUID,UserGUID,UserName 
+		
+		select * from ( 
+		     select *,row_number() over(order by scdate DESC) rn   
+		     from #temp01) a where rn between ${startIndex}+1 and ${startIndex}+${length} 
+		    
+		
+		DROP TABLE #temp01
+	 	
+	 	
+	 	
+	 	
+	 			
+	 </select>
+	 
+	 <select id="getXsCustCountDao" resultType="Integer" parameterType="com.zs.crm.web.vo.XsCustomersManagerVo">
+	 	<!-- SELECT b.id,a.CstGUID as cstGUID,a.CstName AS cstName,a.MobileTel AS mobileTel,c.userName,max(LastDate)as lastDate into #xsMStemp
+		FROM p_Customer a
+		INNER JOIN p_CstAttach b ON b.CstGUID = A.CstGUID
+		INNER JOIN MyUser c ON c.UserGUID = b.UserGUID
+		INNER JOIN s_Opportunity d ON d.CstGUID = A.CstGUID
+	 	<where>
+	 		<if test="projGUID !=null and ''!=projGUID">
+	 			b.ProjGUID =#{projGUID}
+	 		</if>
+	 		<if test="userName !=null and ''!=userName">
+	 			AND c.UserName =#{userName}
+	 		</if>
+			<if test="cstName !=null and ''!=cstName">
+	 			AND CstName LIKE '%${cstName}%'
+	 		</if>
+	 		<if test="mobileTel !=null and ''!=mobileTel">
+	 			AND MobileTel LIKE '%${mobileTel}%'
+	 		</if>
+		</where>
+		GROUP BY b.id,a.CstGUID,a.CstName,a.MobileTel,c.userName
+	 	select count(*) from #xsMStemp 
+	 	DROP TABLE #xsMStemp -->
+			 	select 
+		CstName,Tel,GjContent,Zygw,Gjfs,GjDate,max(scdate) AS scdate,ProjGUID,UserGUID
+		into #temp01 
+		from ( 
+		select sp.CstGUID, 
+		     p1.CstName, 
+		     (CASE WHEN ISNULL(OfficeTel,'')='' THEN '' ELSE '(0)' + OfficeTel + CHAR(13) + CHAR(10) END ) + 
+		     (CASE WHEN ISNULL(HomeTel,'')='' THEN '' ELSE '(H)'+ HomeTel + CHAR(13) + CHAR(10) END ) + 
+		     (CASE WHEN ISNULL(MobileTel,'')='' THEN '' ELSE '(M)'+ MobileTel + CHAR(13) + CHAR(10) END ) AS Tel, 
+		     p2.GjContent, 
+		     sp.Zygw, 
+		     sp.UserGUID,
+		     u.UserName, 
+		     p2.GjDate, 
+		     p2.Gjfs, 
+		     sp.ProjGUID, 
+		     p2.scrm_timestamp_data as scdate 
+		from s_Opportunity sp 
+		left JOIN P_Customer p1 ON p1.CstGUID=sp.CstGUID 
+		left JOIN s_Opp2Gjjl p2 ON p2.OppGUID=sp.OppGUID 
+		LEFT JOIN MyUser u ON u.UserGUID=sp.UserGUID 
+		where not exists 
+		(select 1 
+		from s_Opportunity 
+		where s_Opportunity.CstGUID=sp.CstGUID 
+		and s_Opportunity.scrm_timestamp_data>sp.scrm_timestamp_data))a 
+		where 1=1
+		<if test="projGUID!=null and ''!=projGUID">
+			and ProjGUID = #{projGUID} 
+		</if>
+		<if test="startTime!=null and ''!=startTime">
+			and GjDate &gt;= #{startTime}
+		</if>
+		<if test="endTime!=null and ''!=endTime">
+			and GjDate &lt;= #{endTime}
+		</if>
+		<if test="cstName!=null and ''!=cstName">
+			and CstName like '%${cstName}%'
+		</if>
+		<if test="mobileTel!=null and ''!=mobileTel">
+			and Tel like '%${mobileTel}%'
+			<!-- and (p.MobileTel like '%${mobileTel}%' or p.HomeTel like '%${mobileTel}%' or p.OfficeTel like '%${mobileTel}%')  -->
+		</if>
+		<if test="userName!=null and ''!=userName">
+			and Zygw = #{userName}
+		</if>
+		<if test="userGuid!=null and ''!=userGuid">
+			and UserGUID = #{userGuid}
+		</if>
+		group by CstName,Tel,GjContent,Zygw,Gjfs,GjDate,ProjGUID,UserGUID 
+		
+		select count(*) from #temp01
+		    
+		
+		DROP TABLE #temp01
+	 </select>
+	 
+	 <select id="getXsFollowInfoCountDaoByCusid" parameterType="com.zs.crm.web.vo.XsCustomersManagerVo" resultType="Integer">
+	 	SELECT sequence as id, Zygw as userName ,	GjDate as gjDate,Gjfs as gjfs,GjContent as gjContent,CstName as cstName,A.ProjGUID AS projGUID,b.NextDate AS nextDate into #xsMStemp
+		FROM
+			s_Opp2Gjjl A
+		LEFT JOIN s_Opportunity B ON B.OppGUID = A.OppGUID
+		LEFT JOIN p_Customer C ON C.CstGUID = B.CstGUID
+	 	<where>
+	 		c.CstGUID = #{cstGuid}
+			<if test="userName !=null and ''!=userName">
+	 				AND Zygw=#{userName}
+	 		</if>
+	 		<if test="startFollowTime !=null and ''!=startFollowTime">
+	 			<if test="endFollowTime !=null and ''!=endFollowTime">
+	 				AND a.GjDate BETWEEN #{startFollowTime} AND #{endFollowTime}
+	 			</if>
+	 			<if test="endFollowTime ==null or ''==endFollowTime">
+	 				AND a.GjDate > #{startFollowTime} 
+	 			</if>
+	 		</if>
+	 		<if test="startFollowTime ==null or ''==startFollowTime">
+	 			<if test="endFollowTime !=null and ''!=endFollowTime">
+	 				AND a.GjDate &lt;= #{endFollowTime}
+	 			</if>
+	 		</if>
+	 		<if test="projGUID !=null and ''!=projGUID">
+	 			and b.ProjGUID=#{projGUID}
+	 		</if>
+		</where>
+		select count(*) from #xsMStemp
+		DROP TABLE #xsMStemp
+	 </select>
+	 
+	 <select id="getXsFollowInfoDaoByCusid" resultType="com.zs.crm.entity.XsCustomersManagerEntity" parameterType="com.zs.crm.web.vo.XsCustomersManagerVo">
+	 	SELECT sequence as id, Zygw as userName ,	GjDate as gjDate,Gjfs as gjfs,GjContent as gjContent,CstName as cstName,A.ProjGUID AS projGUID,b.NextDate AS nextDate into #xsMStemp
+		FROM
+			s_Opp2Gjjl A
+		LEFT JOIN s_Opportunity B ON B.OppGUID = A.OppGUID
+		LEFT JOIN p_Customer C ON C.CstGUID = B.CstGUID
+	 	<where>
+	 		c.CstGUID = #{cstGuid}
+			<if test="userName !=null and ''!=userName">
+	 				AND Zygw=#{userName}
+	 		</if>
+	 		<if test="startFollowTime !=null and ''!=startFollowTime">
+	 			<if test="endFollowTime !=null and ''!=endFollowTime">
+	 				AND a.GjDate BETWEEN #{startFollowTime} AND #{endFollowTime}
+	 			</if>
+	 			<if test="endFollowTime ==null or ''==endFollowTime">
+	 				AND a.GjDate > #{startFollowTime} 
+	 			</if>
+	 		</if>
+	 		<if test="startFollowTime ==null or ''==startFollowTime">
+	 			<if test="endFollowTime !=null and ''!=endFollowTime">
+	 				AND a.GjDate &lt;= #{endFollowTime}
+	 			</if>
+	 		</if>
+	 		<if test="projGUID !=null and ''!=projGUID">
+	 			and b.ProjGUID=#{projGUID}
+	 		</if>
+		</where>
+		select * from #xsMStemp 
+	 	<where>
+	 		id IN (
+					SELECT TOP ${length} id FROM #xsMStemp
+					WHERE id NOT IN ( SELECT TOP ${startIndex} id FROM #xsMStemp ORDER BY ${sortName}  ${sortDir})
+					ORDER BY ${sortName}  ${sortDir} )
+			ORDER BY ${sortName}  ${sortDir} 
+	 	</where>
+	 	DROP TABLE #xsMStemp
+	 </select>
+ </mapper>

@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <!-- 为这个mapper指定一个唯一的namespace，namespace的值习惯上设置成包名+sql映射文件名，这样就能够保证namespace的值是唯一的
+  例如namespace="me.gacl.mapping.userMapper"就是me.gacl.mapping(包名)+userMapper(userMapper.xml文件去除后缀)
+   -->
+<!-- 当namespace的值为接口UserMapper的类路径时，相当于对接口的实现，Java中可以直接调用接口方法。
+当这里的值为任意其他值时，Java调用接口方法时必须增加一句代码。
+session.getConfiguration().addMapper(UserMApper.class); -->
+ <mapper namespace="com.zs.mybatis.test.UserMapper">
+ 
+<!-- 
+catch配置命名空间的缓存。
+type-cache实现类，默认为PERPETUAL，可以使用自定义的cache实现类
+eviction-回收算法，默认为LRU，可选的算法有：
+	LRU ：最近最少使用的
+	FIFO ：先进先出
+	SOFT ：软引用
+	WEAK ：弱引用
+flushInterval刷新间隔默认为一个小时，单位毫秒
+size缓存大小，默认为1024
+readOnly-只读 -->
+<!--  <cache type="PERPETUAL" blocking="" eviction="" flushInterval="" readOnly="" size="">
+ </cache> -->
+ <!-- 从其他命名空间引用缓存配置 -->
+<!--  <cache-ref namespace="" /> -->
+<!-- 解决结果集中字段名和对象属性名不一样 
+	 结果映射，用来描述如何从结果集映射到想要的对象上
+-->
+  <!-- <resultMap type="com.zs.mybatis.test.User" id="userResultMap" autoMapping="true" extends="" >
+		  <id property="id" column="id"/>
+		  <result property="name" column="name" jdbcType="varchar"/>
+		  <result property="age" column="age" jdbcType="varchar"/>
+		  <association property=""></association>
+		  <collection property=""></collection>
+		  <discriminator javaType=""><case value=""></case></discriminator>
+  </resultMap> -->
+  
+<!-- 可以重用的sql块，可以被其他数据库操作块应用 -->
+  <sql id="selectUser" >id,name,age</sql>
+    <!-- 在select标签中编写查询的SQL语句， 设置select标签的id属性为getUser，id属性值必须是唯一的，不能够重复
+     	 使用parameterType属性指明查询时使用的参数类型，resultType属性指明查询返回的结果集类型
+     resultType="com.zs.mybatis.test.User"就表示将查询结果封装成一个User类的对象返回
+     User类就是users表所对应的实体类
+   -->
+  <!-- resultMap与resultType不能同时使用。 -->
+  <!-- <select id="selectUserSql" resultMap="userResultMap" fetchSize="" flushCache="true" timeout="" statementType="STATEMENT">
+  	select <include refid="selectUser"/> from users
+  </select> -->
+
+   
+   <!--根据id查询得到一个user对象-->
+     <select id="getUser" parameterType="int" 
+         resultType="com.zs.mybatis.test.User">
+         select * from users where id=#{id}
+     </select> 
+     <select id="getUserByAge" parameterType="int"
+     		resultType="com.zs.mybatis.test.User" >
+     		select * from users where age=#{age}
+     </select>
+     <!-- 多参数查询通过map -->
+      <select id="getUserDulParmMap" parameterType="map" resultType="com.zs.mybatis.test.User">
+       select * from users where age=#{age} and id=#{id}
+      </select>
+     <!--  多参数查询通过bean -->
+     <select id="getUserDulParmBean" parameterType="com.zs.mybatis.test.User" resultType="com.zs.mybatis.test.User">
+       select * from users where age=#{age} and id=#{id}
+      </select>
+      <!-- insert 语句 -->
+      <insert id="insertUserByMap" parameterType="map">
+        insert into users(NAME,age)values(#{name},#{age})
+      </insert>
+      <!-- update语句 -->
+      <update id="updateUserByBean" parameterType="com.zs.mybatis.test.User">
+        UPDATE `users` SET `NAME`=#{name},`age`=#{age} WHERE id=#{id}
+      </update>
+      <!-- delete语句 -->
+      <delete id="deleteUserByBean" parameterType="int">
+        delete from users where id=#{id}
+      </delete>
+     <!--  insert多条数据   forEach item表示集合中每一个元素进行迭代时的别名，index指 定一个名字，用于表示在迭代过程中，每次迭代到的位置，
+     	   open表示该语句以什么开始，separator表示在每次进行迭代之间以什么符号作为分隔 符，close表示以什么结束，-->
+      <insert id="insertDulp" parameterType="list">
+        insert into users(name,age) values
+        <foreach collection="list" item="item" separator="," index="index">
+          (#{item.name},#{item.age})
+        </foreach>
+      </insert>
+      <!-- insert后，获取插入行的主键 -->
+      <insert id="insertReturnKey" useGeneratedKeys="true" keyProperty="id" parameterType="com.zs.mybatis.test.User">
+       insert into users(name,age) values(#{name},#{age})
+      </insert>
+      <!-- 动态sql语句的应用 主要有 
+      	if标签:最简单的动态sql语句，需要在where前面写一条永久成立语句，否则 and关键字会出错
+      	choose标签(相当于switch)：和when otherwise配合使用，在where语句后面跟一条永久成立语句，当匹配到when条件符合时，就跳出choose，如果没有when匹配就匹配otherwise。
+      	where标签：里面嵌套if语句，会智能的忽略掉第一个 and 和or ，
+      	trim:增加前缀和后缀，及可以指定前缀后缀的覆盖字符,
+      	set：update中使用会智能的去掉最后一个set的逗号,
+      	foreach：批量操作是使用。
+      	 -->
+      <!-- <select id="dynamicIfTest" parameterType="Blog" resultType="Blog">  
+		      select * from t_blog where 1 = 1  
+		      <if test="title != null">  
+					and title = #{title}  
+		      </if>  
+		     <if test="content != null" >  
+		         	and content = #{content}  
+		      </if>  
+		     <if test="owner != null">  
+		         	and owner = #{owner}  
+		     </if>      
+  	</select> 
+  	<select id="dynamicChooseTest" parameterType="Blog" resultType="Blog">  
+      select * from t_blog where 1 = 1  
+      <choose>  
+     	 <when test="title != null">  
+             and title = #{title}  
+         </when>  
+         <when test="content != null">  
+              and content = #{content}  
+         </when>  
+         <otherwise>  
+     		  and owner = "owner1"  
+         </otherwise>  
+      </choose>  
+  	</select> 
+  	<select id="dynamicWhereTest" parameterType="Blog" resultType="Blog">  
+      		select * from t_blog  
+	    <where>  
+          <if test="title != null">  
+              	title = #{title}  
+          </if>  
+          <if test="content != null">  
+     			and content = #{content}  
+          </if>  
+          <if test="owner != null">  
+             	and owner = #{owner}  
+          </if>  
+          
+	    </where>  
+  	</select>
+  	<select id="dynamicTrimTest" parameterType="Blog" resultType="Blog">  
+      			select * from t_blog  
+	      <trim prefix="where" prefixOverrides="and |or">  
+			<if test="title != null">  
+	              title = #{title}  
+	        </if>  
+	        <if test="content != null">  
+	              and content = #{content}  
+	        </if>  
+	        <if test="owner != null">  
+	              or owner = #{owner}  
+	        </if>  
+	      </trim>  
+  	</select>
+  	<update id="dynamicSetTest" parameterType="Blog">  
+      	update t_blog  
+	      <set>  
+	          <if test="title != null">  
+	              title = #{title},  
+	          </if>  
+	          <if test="content != null">  
+	     		  content = #{content},  
+	          </if>  
+	          <if test="owner != null">  
+	              owner = #{owner}  
+	          </if>  
+	      </set>  
+	      where id = #{id}  
+  	</update> -->
+<!--  单参数array数组的类型：   -->
+  <!--  <select id="dynamicForeach2Test" resultType="Blog">  
+       select * from t_blog where id in  
+       <foreach collection="array" index="index" item="item" open="(" separator="," close=")">  
+           #{item}  
+       </foreach>  
+   </select> -->
+
+  
+  	
+  	
+      
+      
+ </mapper>

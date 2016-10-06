@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper  namespace="com.zs.busi.dao.ZsRentDao">
+ 	<resultMap id="rentInfoResult" type="com.zs.busi.entity.ZsRentTableEntity" >
+ 		<id property="unitNo" column="铺位号"/>
+ 		<result property="addressNo" column="门牌号"/>
+ 		<result property="firstArea" column="一面积"/>
+ 		<result property="secondArea" column="二面积"/>
+ 		<result property="totalArea" column="总面积"/>
+ 		<result property="saleStatus" column="销售情况"/>
+ 		<result property="shopStatus" column="商铺状态"/>
+ 		<result property="rentStatus" column="租赁情况"/>
+ 		<result property="totalRent" column="租金总额"/>
+ 		<result property="dayRent" column="日平米租金"/>
+ 		<result property="signUpDate" column="签约日期"/>
+ 		<result property="intentionCst" column="意向客户"/>
+ 		<result property="investmentOfficer" column="招商专员"/>
+ 		<result property="keyAccountManager" column="大客户经理"/>
+ 	</resultMap>
+ 	<!-- 查询租赁列表 -->
+	 <select id="getZsRentInfoListDao" parameterType="com.zs.busi.entity.ZsRentSearchInfoVo" resultMap="rentInfoResult">
+	 	select * into #rent from zs_rent where 项目GUID = #{projGuid}
+	 	<if test="unitNo!=null and ''!=unitNo">
+	 		and 铺位号 = #{unitNo}
+	 	</if>
+	 	<if test="saleStatus!=null and ''!=saleStatus">
+	 		and 销售情况 = #{saleStatus}
+	 	</if>
+	 	<if test="shopStatus!=null and ''!=shopStatus">
+	 		and 商铺状态 = #{shopStatus}
+	 	</if>
+	 	<if test="length==null or ''==length">
+	 		select * from #rent
+	 	</if>
+	 	<if test="length!=null and ''!=length">
+	 		select top ${length} * from  #rent where 铺位号 not in (select top ${startIndex} 铺位号 from #rent)
+	 	</if>
+	 </select>
+	 <!-- 更新单条租赁信息 -->
+	 <update id="updateZsRentInfoDao" parameterType="com.zs.busi.entity.ZsRentTableEntity">
+ 		update zs_rent
+ 		<set>
+		 	<if test="saleStatus!=null">
+		 		销售情况 = #{saleStatus},
+		 	</if>
+		 	<if test="shopStatus!=null">
+		 		商铺状态 = #{shopStatus},
+		 	</if>
+		 	<if test="rentStatus!=null">
+		 		租赁情况 = #{rentStatus},
+		 	</if>
+		 	<if test="totalRent!=null">
+		 		租金总额 = #{totalRent},
+		 	</if>
+		 	<if test="dayRent!=null">
+		 		日平米租金 = #{dayRent},
+		 	</if>
+		 	<if test="signUpDate!=null">
+		 		签约日期 = #{signUpDate},
+		 	</if>
+		 	<if test="intentionCst!=null">
+		 		意向客户 = #{intentionCst},
+		 	</if>
+		 	<if test="investmentOfficer!=null">
+		 		招商专员 = #{investmentOfficer},
+		 	</if>
+		 	<if test="keyAccountManager!=null">
+		 		大客户经理 = #{keyAccountManager},
+		 	</if>
+		 		铺位号 = #{unitNo}
+ 		</set>
+ 			where 项目GUID = #{projGuid} and 铺位号 = #{unitNo}
+	 </update>
+ </mapper>

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:mybatis-spring="http://mybatis.org/schema/mybatis-spring"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/aop 
+		http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+		http://www.springframework.org/schema/mvc 
+		http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+		http://mybatis.org/schema/mybatis-spring 
+		http://mybatis.org/schema/mybatis-spring-1.2.xsd
+		http://www.springframework.org/schema/tx 
+		http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+		http://www.springframework.org/schema/context 
+		http://www.springframework.org/schema/context/spring-context-3.0.xsd"> 
+<!-- 多个数据源，多个事务的配置，如何管理事务?? -->
+ 
+<!-- 引入配置文件，所有数据源的配置信息从配置文件中获取 --> 
+	<!-- <context:property-placeholder location="classpath:config.properties" /> -->
+<!-- <bean id="propertyPlaceholderConfigurer"   
+        class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">  
+    <property name="locations"> 	 
+        <list>  
+            <value>classpath:config.properties</value>  
+        </list>  
+    </property>  
+</bean> -->
+<!-- ====兆盛信息管理数据库==== -->
+	<!-- 	maxActive：最大连接数据库连接数，设置为0时，表示没有限制； 
+     		maxIdle：最大等待连接中的数量，设置为0时，表示没有限制； 
+			maxWait：最大等待秒数，单位为毫秒， 超过时间会报出错误信息； -->
+	 <!-- <bean id="dataSourceBusi" class="org.apache.commons.dbcp2.BasicDataSource">
+		<property name="driverClassName" value="${busi.driver}"></property>
+		<property name="url" value="${busi_url}"></property>
+		<property name="username" value="${busi_username}"></property>
+		<property name="password" value="${busi_password}"></property>  
+		<property name="maxTotal"><value>255</value></property>  
+    	<property name="maxIdle"> <value>2</value></property>  
+   		<property name="maxWaitMillis"><value>120000</value></property>      
+	</bean>  -->
+	  <bean id="dataSourceBusi" class="org.apache.commons.dbcp2.BasicDataSource">
+		<property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver"></property>
+		<property name="url" value="jdbc:sqlserver://192.168.1.25:1433;database=dotnet_erp306;"></property>
+		<property name="username" value="sa"></property>
+		<property name="password" value="Zs2015"></property>	  
+		<property name="maxTotal"><value>255</value></property>  
+    	<property name="maxIdle"> <value>2</value></property>  
+   		<property name="maxWaitMillis"><value>120000</value></property>      
+	</bean> 
+	<!-- 配置数据连接conn mybastis与spring的整合-->
+	<bean id="msqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSourceBusi"></property>
+		<property name="mapperLocations" value="classpath*:com/zs/**/*Mapper.xml"/>
+	</bean>
+	<!-- 通过默认构造函数，从session工厂获取session -->
+	<!-- <bean id="sqlSessionTemplate" class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg index="0" ref="msqlSessionFactory"/>
+	</bean> -->
+	<!-- 配置事务管理 -->
+	<bean name="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSourceBusi"/>
+	</bean>
+	<!-- 配置事务拦截，及说明那些方法要进行事务管理，也成为通知 -->
+	<tx:advice id="transactionAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="*" propagation="REQUIRED" />
+			<!-- <tx:method name="delete*" propagation="REQUIRED"/>
+			<tx:method name="update*" propagation="REQUIRED"/>
+			<tx:method name="trans*" propagation="REQUIRED"/>
+			<tx:method name="select*" read-only="true"/>  --> 	
+		</tx:attributes>
+	</tx:advice>
+	<!--配置切面，定义切点，作用：声明哪些类中加入事务，进行事务管理。-->
+	<aop:config>
+ 		<aop:pointcut id="transactionPointcut" expression="(execution(* com.zs.busi.service.impl.*.*(..)))or(execution(* com.zs.crm.service.impl.*.*(..)))or(execution(* com.zs.rbac.service.impl.*.*(..)))" />
+ 		<aop:advisor  pointcut-ref="transactionPointcut" advice-ref="transactionAdvice" />
+	</aop:config>
+	<!-- Mybatis在与Spring集成的时候可以配置MapperFactoryBean来生成Mapper接口的代理，注入spring -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer"> 
+      <property name="basePackage" value="com.zs.busi.dao,com.zs.crm.dao,com.zs.busi.log.dao,com.zs.common.dao,com.zs.rbac.dao" /> 
+      <property name="sqlSessionFactoryBeanName" value="msqlSessionFactory" /> 
+    </bean>	
+    
+  
+    
+    
+<!-- ===兆盛企业信息管理数据库==end=== -->
+
+</beans>

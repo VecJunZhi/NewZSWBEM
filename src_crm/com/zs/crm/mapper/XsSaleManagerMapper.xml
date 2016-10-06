@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper  namespace="com.zs.crm.dao.XsSaleManagerDao">
+ 	<select id="getDayReportInfoDao" resultType="com.zs.crm.entity.XsSaleManagerShowEntity">
+ 
+ 	</select>
+ 	
+ 	<select id="getCstByCycleAndFollowWayDao" parameterType="com.zs.crm.entity.XsSaleManagerEntity" resultType="com.zs.crm.entity.XsSaleManagerEntity">
+ 		select a.Gjfs as gjfs,c.[group] as groupName,count(*) as groupNum from s_Opp2Gjjl a,myUser b,u_Group c where b.UserGUID = c.zGUID and a.GjrGUID = b.UserGUID  and a.Gjfs=#{gjfs} 
+ 		and a.GjDate between #{beginTime} and #{endTime} group by c.[group],a.Gjfs
+ 	</select>
+ 	<select id="getCstByCycleAndStatusDao" parameterType="com.zs.crm.entity.XsSaleManagerEntity" resultType="com.zs.crm.entity.XsSaleManagerEntity">
+ 		select a.Status as status,c.[group] as groupName,count(*) as groupNum from s_Opp2Gjjl a,myUser b,u_Group c where b.UserGUID = c.zGUID and a.GjrGUID = b.UserGUID  and a.Status=#{status} 
+ 		and a.GjDate between #{beginTime} and #{endTime} group by c.[group],a.Status 
+ 	</select>
+ 	
+ 	<select id="getCstSubscribeInfoByCycleDao" parameterType="com.zs.crm.entity.XsSaleManagerEntity" resultType="com.zs.crm.entity.XsSaleManagerEntity">
+ 	select groupName,
+	
+			sum(CASE WHEN ProductType='住宅' and QSDate between #{beginTime} and #{endTime} THEN 1 ELSE 0 END) AS 'sets', 
+			sum(CASE WHEN ProductType='住宅' and QSDate between #{beginTime} and #{endTime} THEN Total ELSE 0 END)AS 'money' 
+			
+			from 
+			(SELECT [group]AS groupName, 
+			(CASE WHEN A.Ywy = null OR A.Ywy = ' ' THEN B.Ywy ELSE A.Ywy END)Ywy, 
+			(CASE WHEN A.QSDate = null OR A.QSDate = ' ' THEN B.QSDate WHEN AAA.CloseReason = '换房' THEN AAA.QSDate  ELSE A.QSDate  END)QSDate, 
+			(CASE WHEN  A.CloseReason IN ('退房','换房') THEN A.CloseDate  ELSE B.CloseDate  END)CloseDate, 
+			RoomStatus ,TradeStatus ,s_trade .CloseReason  ,ProductType ,s_trade.ProjGUID,room.Total 
+			FROM  s_Trade 
+			LEFT JOIN s_Order A ON A.OrderGUID  = s_Trade .RGOrderGUID 
+			LEFT JOIN s_Contract  B ON B.ContractGUID  = s_Trade .ContractGUID 
+			LEFT JOIN rptvs_Room room ON room.RoomGUID = s_Trade.RoomGUID 
+			LEFT JOIN s_Order AAA ON A.LastSaleGUID = AAA.OrderGUID 
+			LEFT JOIN u_Group u ON u.zGUID=a.UserGUIDList 
+			WHERE TradeStatus = '激活' OR s_Trade.CloseReason = '退房')YA 
+			GROUP BY YA.groupName
+			<!-- order by ${orderWord} desc -->
+ 	</select>
+ 	<select id="getCstSignUpInfoByCycleDao" parameterType="com.zs.crm.entity.XsSaleManagerEntity" resultType="com.zs.crm.entity.XsSaleManagerEntity">
+
+ 	</select>
+ 	<!--获取首次来访的客户数  -->
+ 	<select id="getFirstVisitCountByCycleDao" parameterType="com.zs.crm.entity.XsSaleManagerEntity" resultType="String">
+ 		declare @var_BgnDate datetime,@var_EndDate datetime,@var_ProjGuid  uniqueidentifier 
+		set @var_BgnDate=#{beginTime} 
+		set @var_EndDate=#{endTime} 
+		set @var_ProjGuid='8FFF2136-61EA-E411-BAAF-FCAA145C42F2' 
+		Create TABLE #tab200( 
+		gs VARCHAR(100), 
+		zygw VARCHAR(200), 
+		newldkh INT DEFAULT 0, 
+		oldldkh INT DEFAULT 0, 
+		newjfkh INT DEFAULT 0, 
+		oldjfkh INT DEFAULT 0, 
+		gjhd INT DEFAULT 0, 
+		gjhf INT DEFAULT 0, 
+		) 
+		INSERT INTO #tab200 
+		select u.[group],s.Zygw, 
+		SUM(CASE WHEN opp.Gjfs = '客户来电' AND CONVERT(varchar, p.CreatedOn , 101) = CONVERT(varchar, GjDate , 101) THEN 1 ELSE 0 END) AS A1, 
+		   SUM(CASE WHEN opp.Gjfs = '客户来电' AND CONVERT(varchar, p.CreatedOn , 101) &lt; CONVERT(varchar, GjDate , 101) THEN 1 ELSE 0 END) AS A2, 
+		   SUM(CASE WHEN opp.Gjfs = '现场接待' AND CONVERT(varchar, p.CreatedOn , 101) = CONVERT(varchar, GjDate , 101) THEN 1 ELSE 0 END) AS B1, 
+		   SUM(CASE WHEN opp.Gjfs = '现场接待' AND CONVERT(varchar, p.CreatedOn , 101) &lt; CONVERT(varchar, GjDate , 101) THEN 1 ELSE 0 END) AS B2, 
+		   SUM(CASE WHEN opp.Gjfs = '主动电访' THEN 1 ELSE 0 END) AS C, 
+		   SUM(CASE WHEN opp.Gjfs = '上门拜访' THEN 1 ELSE 0 END) AS D 
+
+		from s_Opp2Gjjl opp 
+		LEFT JOIN s_Opportunity s ON s.OppGUID=opp.OppGUID 
+		LEFT JOIN p_Customer p ON p.CstGUID=s.CstGUID 
+		LEFT JOIN u_Group u ON u.zGUID=s.UserGUID 
+		WHERE CONVERT(varchar(100), GjDate, 23) between @var_BgnDate and @var_EndDate 
+		GROUP BY u.[group],s.Zygw 
+		Create TABLE #tab300( 
+		ywy VARCHAR (200), 
+		zzjy INT DEFAULT 0, 
+		spjy INT DEFAULT 0, 
+		dxsjy INT DEFAULT 0, 
+		cwjy INT DEFAULT 0, 
+		zzt INT DEFAULT 0, 
+		spt INT DEFAULT 0, 
+		dxst INT DEFAULT 0, 
+		cwt INT DEFAULT 0, 
+		zzh INT DEFAULT 0, 
+		sph INT DEFAULT 0, 
+		dxsh INT DEFAULT 0, 
+		cwh INT DEFAULT 0,) 
+		INSERT INTO #tab300 
+		SELECT Ywy , 
+		   SUM(CASE WHEN  (BB.TradeStatus = '激活' OR BB.CloseReason = '退房') AND BB.QSDate >= @var_BgnDate AND BB.QSDate &lt;= @var_EndDate AND BB.ProductType LIKE '%住宅%' THEN 1 ELSE 0 END)AS '住宅成交', 
+		   SUM(CASE WHEN  (BB.TradeStatus = '激活' OR BB.CloseReason = '退房') AND BB.QSDate >= @var_BgnDate AND BB.QSDate &lt;= @var_EndDate AND BB.ProductType LIKE '%商铺%' THEN 1 ELSE 0 END)AS '商铺成交', 
+		   SUM(CASE WHEN  (BB.TradeStatus = '激活' OR BB.CloseReason = '退房') AND BB.QSDate >= @var_BgnDate AND BB.QSDate &lt;= @var_EndDate AND BB.ProductType LIKE '%地下室%' THEN 1 ELSE 0 END)AS '地下室成交', 
+		   SUM(CASE WHEN  (BB.TradeStatus = '激活' OR BB.CloseReason = '退房') AND BB.QSDate >= @var_BgnDate AND BB.QSDate &lt;= @var_EndDate AND BB.ProductType LIKE '%车位%' THEN 1 ELSE 0 END)AS '车位成交', 
+		   SUM(CASE WHEN BB.CloseReason IN ('退房') AND BB.CloseDate  >= @var_BgnDate AND BB.CloseDate  &lt;= @var_EndDate AND BB.ProductType LIKE '%住宅%'THEN 1 ELSE 0 END)AS '住宅退房', 
+		   SUM(CASE WHEN BB.CloseReason IN ('退房') AND BB.CloseDate  >= @var_BgnDate AND BB.CloseDate  &lt;= @var_EndDate AND BB.ProductType LIKE '%商铺%'THEN 1 ELSE 0 END)AS '商铺退房', 
+		   SUM(CASE WHEN BB.CloseReason IN ('退房') AND BB.CloseDate  >= @var_BgnDate AND BB.CloseDate  &lt;= @var_EndDate AND BB.ProductType LIKE '%地下室%'THEN 1 ELSE 0 END)AS '地下室退房', 
+		   SUM(CASE WHEN BB.CloseReason IN ('退房') AND BB.CloseDate  >= @var_BgnDate AND BB.CloseDate  &lt;= @var_EndDate AND BB.ProductType LIKE '%车位%'THEN 1 ELSE 0 END)AS '车位退房', 
+		   SUM(CASE WHEN BB.CloseReason IN ('换房') AND BB.CloseDate  >= @var_BgnDate AND BB.CloseDate  &lt;= @var_EndDate AND BB.ProductType LIKE '%住宅%' THEN 1 ELSE 0 END)AS '住宅换房', 
+		   SUM(CASE WHEN BB.CloseReason IN ('换房') AND BB.CloseDate  >= @var_BgnDate AND BB.CloseDate  &lt;= @var_EndDate AND BB.ProductType LIKE '%商铺%' THEN 1 ELSE 0 END)AS '商铺换房', 
+		   SUM(CASE WHEN BB.CloseReason IN ('换房') AND BB.CloseDate  >= @var_BgnDate AND BB.CloseDate  &lt;= @var_EndDate AND BB.ProductType LIKE '%地下室%' THEN 1 ELSE 0 END)AS '地下室换房', 
+		   SUM(CASE WHEN BB.CloseReason IN ('换房') AND BB.CloseDate  >= @var_BgnDate AND BB.CloseDate  &lt;= @var_EndDate AND BB.ProductType LIKE '%车位%' THEN 1 ELSE 0 END)AS '车位换房' 
+		FROM( 
+		SELECT 
+		(CASE WHEN A.Ywy = null OR A.Ywy = ' ' THEN B.Ywy ELSE A.Ywy END)Ywy, 
+		(CASE WHEN A.QSDate = null OR A.QSDate = ' ' THEN B.QSDate WHEN AAA.CloseReason = '换房' THEN AAA.QSDate  ELSE A.QSDate  END)QSDate, 
+		(CASE WHEN  A.CloseReason IN ('退房','换房') THEN A.CloseDate  ELSE B.CloseDate  END)CloseDate, 
+		RoomStatus ,TradeStatus ,s_trade .CloseReason  ,ProductType ,s_trade.ProjGUID 
+		FROM  s_Trade 
+		LEFT JOIN es_Order A ON A.OrderGUID  = s_Trade .RGOrderGUID 
+		LEFT JOIN es_Contract  B ON B.ContractGUID  = s_Trade .ContractGUID 
+		LEFT JOIN rptvs_Room room ON room.RoomGUID = s_Trade.RoomGUID 
+		LEFT JOIN es_Order AAA ON A.LastSaleGUID = AAA.OrderGUID 
+		) BB 
+		WHERE BB .ProjGUID IN (@var_ProjGuid) 
+		    
+		GROUP BY Ywy 
+		ORDER BY Ywy 
+	
+		select 
+		<!-- sum(newldkh) AS '新客户接电', 
+		sum(oldldkh) As '老客户接电',  -->
+		sum(newjfkh) AS '新客户接访', 
+		<!-- sum(oldjfkh) AS '老客户接访',  -->
+		
+		sum(zzjy) AS '住宅成交' 
+		
+		
+		from #tab200   
+		LEFT JOIN  #tab300 ON #tab300.ywy=#tab200.zygw 
+		LEFT JOIN u_Group ON u_Group.name=#tab200.zygw 
+		
+		DROP TABLE #tab200 
+		DROP TABLE #tab300
+ 	</select>
+ 	<!--根据时间段获取认购详情  -->
+ 	<select id="getSaleDetailByCycleDao" parameterType="com.zs.crm.entity.XsSaleManagerEntity" resultType="com.zs.crm.entity.XsSaleDetailVo">
+ 	
+ 	</select>
+ 	<!--根据时间段获取转签约详情  -->
+ 	<select id="getSignUpDetailByCycleDao" parameterType="com.zs.crm.entity.XsSaleManagerEntity" resultType="com.zs.crm.entity.XsSignUpDetailVo">
+ 	
+ 	</select>
+ </mapper>

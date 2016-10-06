@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zs.common.dao.ZsDictionaryDao" >
+  <!-- 
+  	 根据    类别classes 查找zs_词典中的  selectName值（天数值）
+  -->
+  <select id="getZsDictionaryByClasses" parameterType = "list" resultType="java.util.HashMap">
+  	SELECT 类别 as classes,名称 as selectName FROM ZS_词典 
+  	WHERE 类别 in
+  	<foreach collection="list" item="value"  index="index"  open="(" close=")" separator="," >
+  		#{value}
+  	</foreach>   
+  </select>
+  <!--
+  	批量更新zs_词典中的 selectName值 
+  -->
+  <update id="updateZsDictionaryByClasses" parameterType="Map"> 	
+  	 <foreach collection="selectNameMap1" item="value"  index="key"   > 			 
+  			 update zs_词典
+  			 <set> 			 	
+  			 	名称 = #{value}
+  			 	where 类别=#{key}  			 	
+  			 </set>			 
+  	</foreach>
+  </update>
+  <insert id="insert" parameterType="com.zs.common.entity.ZsDictionaryEntity" >
+    	insert into zs_词典 (id, 类别, 名称, 属性)
+        values (#{id,jdbcType=INTEGER}, #{classes,jdbcType=NVARCHAR}, #{selectName,jdbcType=NVARCHAR},#{property,jdbcType=CHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.zs.common.entity.ZsDictionaryEntity" >
+         insert into zs_词典
+         <trim prefix="(" suffix=")" suffixOverrides="," >
+           <if test="id != null" >
+             id,
+           </if>
+           <if test="classes != null" >
+                                      类别,
+           </if>
+      	   <if test="selectName != null" >
+                                      名称,
+      	   </if>
+     	   <if test="property != null" >
+                                      属性,
+     	   </if>
+    	</trim>
+    	<trim prefix="values (" suffix=")" suffixOverrides="," >
+      	  <if test="id != null" >
+           #{id,jdbcType=INTEGER},
+         </if>
+         <if test="类别 != null" >
+           #{classes,jdbcType=NVARCHAR},
+         </if>
+         <if test="名称 != null" >
+          #{selectName,jdbcType=NVARCHAR},
+         </if>
+         <if test="属性 != null" >
+          #{property,jdbcType=CHAR},
+         </if>
+    </trim>
+  </insert>
+</mapper>

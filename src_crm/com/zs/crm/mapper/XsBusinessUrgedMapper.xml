@@ -1,0 +1,728 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper  namespace="com.zs.crm.dao.XsBusinessUrgedDao">
+ 	<!-- <resultMap id="tradeInfoResult" type="com.zs.crm.entity.tableStructure.XsTradeTableEntity">
+ 		<id property="tradeGuid" column="TradeGUID"/>
+ 		<result property="cstAllName" column="CstAllName"/>
+ 	</resultMap> -->
+ 	<resultMap id="orderInfoResult" type="com.zs.crm.entity.tableStructure.XsOrderTableEntity" >
+ 		<id property="orderGuid" column="OrderGUID"/>
+ 		<result property="qsDate" column="QsTime"/>
+ 		<result property="rmbCjTotal" column="RmbTotal"/>
+ 		<result property="orderType" column="SaleStatus"/>
+ 		<result property="ywy" column="UserName"/>
+ 		<result property="projGuid" column="ProjGUID"/>
+ 		<result property="roomGuid" column="RoomGUID"/>
+ 		<result property="tradeGuid" column="TradeGUID"/>
+ 	</resultMap>
+ 	<resultMap id="cstInfoResult" type="com.zs.crm.entity.tableStructure.XsCstTableEntity">
+ 		<id property="cstGuid" column="CstGUID"/>
+ 		<result property="cstName" column="CstName"/>
+ 		<result property="mobileTel" column="MobileTel"/>
+ 		<result property="homeTel" column="HomeTel"/>
+ 		<result property="officeTel" column="OfficeTel"/>
+ 		<result property="fax" column="Fax"/>
+ 		<result property="gender" column="Gender"/>
+ 	</resultMap>
+ 	<resultMap id="feeInfoResult" type="com.zs.crm.entity.tableStructure.XsFeeTableEntity">
+ 		<id property="feeGuid" column="FeeGUID"/>
+ 		<result property="itemName" column="ItemName"/>
+ 		<result property="rmbAmount" column="RmbAmount"/>
+ 		<result property="rmbYe" column="RmbYe"/>
+ 	</resultMap>
+	<resultMap id="roomInfoResult" type="com.zs.crm.entity.tableStructure.XsRoomTableEntity">
+ 		<id property="roomGuid" column="RoomGUID"/>
+ 		<result property="roomInfo" column="RoomInfo"/>
+		<result property="bldArea" column="bldArea"/>
+ 	</resultMap>
+ 	<resultMap id="otherInfoResult" type="com.zs.crm.entity.XsBusinessUrgedOtherInfoVo" >
+ 		<result property="overDays" column="overDays"/>
+ 		<result property="qkTotal" column="QKTotal"/>
+ 		<result property="endDate" column="endDate"/>
+ 		<result property="skTotal" column="SKTotal"/>
+ 		<result property="bank" column="bank"/>
+ 	</resultMap>
+ 	<resultMap id="urgedInfoResult" type="com.zs.crm.entity.tableStructure.XsTradeGjjlTableEntity">
+ 		<id property="tradeGuid" column="tradeGUID"/>
+ 		<result property="urgedUserGuid" column="userGUID"/>
+ 		<result property="urgedDate" column="createDate"/>
+ 		<result property="nextUrgedDate" column="nextDate"/>
+ 		<result property="urgedContent" column="content"/>
+ 		<result property="urgedType" column="type"/>
+ 	</resultMap>
+ 	<resultMap id="extInfoResult" type="com.zs.crm.entity.tableStructure.XsTradeExtTableEntity">
+ 		<id property="tradeGuid" column="tradeGUID"/>
+ 		<result property="postponeDate" column="postponeDate"/>
+ 		<result property="level" column="level"/>
+ 		<result property="level1" column="level1"/>
+ 		<result property="level2" column="level2"/>
+ 	</resultMap>
+ 	<resultMap id="userInfoResult" type="com.zs.rbac.entity.User">
+ 		<id property="userID" column="userGuid"/>
+ 		<id property="username" column="UserName"/>
+ 	</resultMap>
+ 	<resultMap id="businessUrgedInfoResult" type="com.zs.crm.entity.XsBusinessUrgedInfoVo">
+		<id property="xsTrade.tradeGuid" column="TradeGUID"/>
+ 		<result property="xsTrade.cstAllName" column="CstAllName"/>
+ 		<association property="xsCst" column="cst" resultMap="cstInfoResult"/>
+ 		<association property="xsOrder" column="order" resultMap="orderInfoResult"/>
+ 		<association property="xsRoom" column="room" resultMap="roomInfoResult"/>
+ 		<association property="xsFee" column="fee" resultMap="feeInfoResult"/>
+ 		<association property="xsOther" column="other" resultMap="otherInfoResult"/>
+ 		<association property="xsGjjl" column="gjjl" resultMap="urgedInfoResult"/>
+ 		<association property="xsExt" column="ext" resultMap="extInfoResult"/>
+ 		<association property="xsUser" column="user" resultMap="userInfoResult"/>
+ 		
+ 	</resultMap>
+ 	<!-- 未付款客户查询 -->
+ 	<select id="getUnPaymentCstListDao" parameterType="com.zs.crm.entity.XsBusinessUrgedInfoVo" resultMap="businessUrgedInfoResult">
+ 		SELECT
+	* INTO #overDue
+FROM
+	(
+		SELECT
+			R.Roominfo,
+			R.BldArea,
+			T.CstAllName AS CstName,
+			cstname1.MobileTel,
+			cstname1.HomeTel,
+			cstname1.OfficeTel,
+			cstname1.Fax,
+			cstname1.Gender,
+			cstname1.CstGUID,
+			CONVERT (VARCHAR(20), O.QSDate, 23) AS QStime,
+			sf.YQdate AS endDate,
+			opp.UserGUID AS uId,
+			O.RmbCjTotal AS RmbTotal,
+			sf.QKTotal,
+			O.RmbCjTotal - sf.QKTotal AS SKTotal,
+			O.OrderType AS SaleStatus,
+			vm.UserName AS UserName,
+			O.ProjGUID,
+			O.QSDate,
+			O.RoomGUID,
+			O.TradeGUID,
+			O.OrderGUID AS SaleGUID,
+			gjjl.createDate,
+			gjjl.nextDate,
+			gjjl.content,
+			CASE WHEN ext.postponeDate IS NOT NULL AND ext.postponeStage='1' THEN ext.postponeDate
+			ELSE NULL
+			END AS postponeDate,
+			CASE
+		WHEN ext. LEVEL IS NULL
+		OR ext. LEVEL = 0 THEN
+			'0'
+		ELSE
+			'1'
+		END AS LEVEL,
+		CASE
+	WHEN (
+		CASE
+		WHEN ext.postponeDate IS NOT NULL AND postponeStage='1' THEN
+			DATEDIFF(
+				dd,
+				ext.postponeDate,
+				GETDATE()
+			)
+		ELSE	
+DATEDIFF(dd, sf.YQdate, GETDATE())
+		END
+	) &lt; 0 THEN
+		0
+	ELSE
+		(
+			CASE
+			WHEN ext.postponeDate IS NOT NULL  AND postponeStage='1'  THEN			
+			DATEDIFF(
+					dd,
+					ext.postponeDate,
+					GETDATE()
+				)
+			ELSE
+				DATEDIFF(dd, sf.YQdate, GETDATE())
+			END
+		)
+	END AS overDays
+	FROM
+		dbo.s_Trade AS T
+	LEFT OUTER JOIN dbo.s_Order AS O ON O.TradeGUID = T.TradeGUID
+	AND T.ProjGUID = O.ProjGUID
+	LEFT OUTER JOIN dbo.s_Trade2Cst AS cst1 ON T.TradeGUID = cst1.TradeGUID
+	AND cst1.CstNum = 1
+	LEFT OUTER JOIN dbo.p_Customer AS cstname1 ON cst1.CstGUID = cstname1.CstGUID
+	LEFT OUTER JOIN dbo.s_Opportunity AS opp ON opp.CstGUID = cstname1.CstGUID
+	AND NOT EXISTS (
+		SELECT
+			1
+		FROM
+			s_Opportunity
+		WHERE
+			CstGUID = opp.CstGUID
+		AND scrm_timestamp_data > opp.scrm_timestamp_data
+	)
+	INNER JOIN dbo.vs_user_ntm vm ON vm.
+	VALUE
+		= CAST (opp.UserGUID AS VARCHAR(50))
+	AND (
+		vm.groupName LIKE '%销售%'
+		OR vm.groupName = '离职组'
+		OR vm.userName = '其他'
+	)
+	LEFT OUTER JOIN dbo.p_Room AS R ON O.RoomGUID = R.RoomGUID
+	INNER JOIN (
+		SELECT
+			SUM (RmbYe) AS QKTotal,
+			TradeGUID,
+			ProjGUID,
+			MIN (lastDate) AS YQdate
+		FROM
+			dbo.s_Fee
+		WHERE
+			(RmbYe > 0)
+		AND (lastDate IS NOT NULL)
+		AND (
+			ItemType = '非贷款类房款'
+		)
+		AND (
+			ItemName = '首期'
+			OR ItemName = '楼款'
+		)
+		OR (RmbYe > 0)
+		AND (lastDate IS NOT NULL)
+		AND (ItemType = '代收费用')
+		GROUP BY
+			TradeGUID,
+			ProjGUID
+		HAVING
+			(SUM(RmbYe) > 0)
+	) AS sf ON sf.TradeGUID = O.TradeGUID
+	AND sf.ProjGUID = O.ProjGUID
+	LEFT JOIN (
+		SELECT
+			*
+		FROM
+			zs_trade_gjjl a
+		WHERE
+			NOT EXISTS (
+				SELECT
+					*
+				FROM
+					zs_trade_gjjl
+				WHERE
+					a.TradeGUID = TradeGUID
+				AND createDate > a.createDate
+				and urgedStage='1'
+			) and urgedStage='1'
+	) AS gjjl ON gjjl.tradeGUID = CONVERT (VARCHAR(50), T.TradeGUID)
+	LEFT JOIN zs_trade_ext ext ON ext.tradeGUID = T.TradeGUID
+	WHERE
+		(O.Status = '激活')
+	AND (
+		O.OrderType = '小订'
+		OR O.OrderType = '认购'
+	)
+	AND R.HuXing != '商铺'
+	) a
+	WHERE  ProjGUID=#{xsOpp.projGuid} 
+		<!-- and SaleGUID in (select distinct VisitBusinessGUID from s_OrderOppRight where 1=1 -->
+		<if test="xsOpp.userGuid!=null and ''!=xsOpp.userGuid">
+			and uId = #{xsOpp.userGuid}
+		</if>
+		<!-- )  -->
+		<if test="xsCst.cstName!=null and ''!=xsCst.cstName">
+			and CstName = #{xsCst.cstName}
+		</if>
+		<if test="xsCst.mobileTel!=null and ''!=xsCst.mobileTel">
+			and (MobileTel = #{xsCst.mobileTel} or OfficeTel = #{xsCst.mobileTel} or HomeTel = #{xsCst.mobileTel} or Fax = #{xsCst.mobileTel})
+		</if>
+		<if test="xsOther.minQsDate!=null and ''!=xsOther.minQsDate">
+			and QStime &gt;= #{xsOther.minQsDate}
+		</if>
+		<if test="xsOther.maxQsDate!=null and ''!=xsOther.maxQsDate">
+			and QStime &lt;= #{xsOther.maxQsDate}
+		</if>
+		<if test="xsOther.minOverDueDays!=null and ''!=xsOther.minOverDueDays">
+			and YQdate &gt;= #{xsOther.minOverDueDays}
+		</if>
+		<if test="xsOther.maxOverDueDays!=null and ''!=xsOther.maxOverDueDays">
+			and YQdate &lt;= #{xsOther.maxOverDueDays}
+		</if>
+		<if test="xsCst.cstGuid!=null and ''!=xsCst.cstGuid">
+			and CstGUID = #{xsCst.cstGuid}
+		</if>
+		<if test="xsOrder.roomGuid!=null and ''!=xsOrder.roomGuid">
+			and RoomGUID = #{xsOrder.roomGuid}
+		</if>
+		<if test="xsExt.level!=null and ''!=xsExt.level">
+			and level in (${xsExt.level})
+		</if>
+		<if test="xsTrade.tradeGuid!=null and ''!=xsTrade.tradeGuid">
+			and tradeGUID = #{xsTrade.tradeGuid}
+		</if>
+		<if test="xsOther.toUrged!=null and ''!=xsOther.toUrged">
+			and DATEDIFF(dd,nextDate,GETDATE()) = 0
+		</if>
+		<if test="xsSearch.sortName !=null and ''!=xsSearch.sortName">
+			order by ${xsSearch.sortName} ${xsSearch.sortDir},tradeGuid
+		</if>
+		<if test="xsSearch.length!=null and ''!=xsSearch.length">
+			select top ${xsSearch.length} * from #overDue where TradeGUID not in (select top ${xsSearch.startIndex} TradeGUID from #overDue)
+		</if>
+		<if test="xsSearch.length==null or ''==xsSearch.length">
+			select * from #overDue
+		</if>
+		drop table #overDue
+ 	</select>
+ 	<!-- 未签约客户查询 -->
+ 	<select id="getUnSignUpCstListDao" parameterType="com.zs.crm.entity.XsBusinessUrgedInfoVo" resultMap="businessUrgedInfoResult">
+		 SELECT
+				R.Roominfo,
+				R.BldArea,
+				T.CstAllName AS CstName,
+				cstname1.Gender,
+				cstname1.MobileTel,
+				cstname1.HomeTel,
+				cstname1.OfficeTel,
+				cstname1.Fax,
+				CONVERT (VARCHAR(20), O.QSDate, 23) AS QStime,
+				CASE
+			WHEN
+			(CASE
+					WHEN ext.postponeDate IS NOT NULL AND postponeStage='2' THEN
+						DATEDIFF(
+							dd,
+							ext.postponeDate,
+							GETDATE()
+						)
+					ELSE	
+			DATEDIFF(dd, O.EndDate, GETDATE())
+					END
+				)&lt;0
+			 THEN
+				0
+			ELSE
+			(
+						CASE
+						WHEN ext.postponeDate IS NOT NULL  AND postponeStage='2'  THEN			
+						DATEDIFF(
+								dd,
+								ext.postponeDate,
+								GETDATE()
+							)
+						ELSE
+							DATEDIFF(dd, O.EndDate, GETDATE())
+						END
+					)
+			END AS overDays,
+			 O.EndDate AS endDate,
+			 CASE
+			WHEN ext.level1 IS NULL
+			OR ext.level1 = 0 THEN
+				'0'
+			ELSE
+				'1'
+			END AS level1,
+			 O.RmbCjTotal,
+			 O.OrderType AS SaleStatus,
+			 vm.UserName AS UserName,
+			 O.TradeGUID,
+			 O.ProjGUID,
+			 O.OrderGUID,
+			 T.OppGUID,
+			 gjjl.createDate,
+			 gjjl.content,
+			 gjjl.nextDate,
+			CASE WHEN  ext.postponeDate  IS NOT NULL AND postponeStage='2' THEN ext.postponeDate
+			ELSE NULL END AS postponeDate
+			
+			INTO #unSignUp
+			FROM
+				dbo.s_Trade AS T
+			LEFT JOIN dbo.s_Order AS O ON O.TradeGUID = T.TradeGUID
+			AND T.ProjGUID = O.ProjGUID
+			LEFT JOIN dbo.s_Trade2Cst AS cst1 ON T.TradeGUID = cst1.TradeGUID
+			AND cst1.CstNum = 1
+			LEFT JOIN dbo.p_Customer AS cstname1 ON cst1.CstGUID = cstname1.CstGUID
+			LEFT OUTER JOIN dbo.s_Opportunity AS opp ON opp.CstGUID = cstname1.CstGUID
+			AND NOT EXISTS (
+				SELECT
+					1
+				FROM
+					s_Opportunity
+				WHERE
+					CstGUID = opp.CstGUID
+				AND scrm_timestamp_data > opp.scrm_timestamp_data
+			)
+			INNER JOIN dbo.vs_user_ntm vm ON vm.
+			VALUE
+				= CAST (opp.UserGUID AS VARCHAR(50))
+			AND (
+				vm.groupName LIKE '%销售%'
+				OR vm.groupName = '离职组'
+				OR vm.userName = '其他'
+			)
+			LEFT JOIN dbo.p_Room AS R ON O.RoomGUID = R.RoomGUID
+			LEFT JOIN (
+				SELECT
+					TradeGUID,
+					SUM (RmbYe) AS rmbye
+				FROM
+					s_Fee
+				WHERE
+					ItemType != '贷款类房款'
+				GROUP BY
+					TradeGUID
+			) sf ON sf.TradeGUID = t.TradeGUID
+			LEFT JOIN (
+				SELECT
+					*
+				FROM
+					zs_trade_gjjl a
+				WHERE
+					NOT EXISTS (
+						SELECT
+							*
+						FROM
+							zs_trade_gjjl
+						WHERE
+							a.TradeGUID = TradeGUID
+						AND createDate > a.createDate
+						and urgedStage='2'
+					)and urgedStage='2'
+			) AS gjjl ON gjjl.tradeGUID = CONVERT (VARCHAR(50), T.TradeGUID)
+			LEFT JOIN zs_trade_ext ext ON ext.tradeGUID = T.TradeGUID
+			WHERE
+				(O.EndDate IS NOT NULL)
+			AND (O.Status = '激活')
+			AND (O.OrderType = '认购')
+			AND R.HuXing != '商铺'
+			AND R.HuXing != '车位'
+			AND opp.status != '丢失'
+			AND rmbye = 0
+		<if test="xsOpp.userGuid!=null and ''!=xsOpp.userGuid">
+			and opp.UserGUID = #{xsOpp.userGuid}
+		</if>
+		<if test="xsOpp.projGuid!=null and ''!=xsOpp.projGuid">
+			and O.ProjGUID = #{xsOpp.projGuid}
+		</if>
+		<if test="xsCst.cstName!=null and ''!=xsCst.cstName">
+			and T.CstAllName = #{xsCst.cstName}
+		</if>
+		<if test="xsCst.mobileTel!=null and ''!=xsCst.mobileTel">
+			and (cstname1.MobileTel = #{xsCst.mobileTel} or cstname1.OfficeTel = #{xsCst.mobileTel} or cstname1.HomeTel = #{xsCst.mobileTel} or cstname1.Fax = #{xsCst.mobileTel})
+		</if>
+		<if test="xsTrade.tradeGuid!=null and ''!=xsTrade.tradeGuid">
+			and O.TradeGUID = #{xsTrade.tradeGuid}
+		</if>
+		<if test="xsExt.level!=null and ''!=xsExt.level">
+			and ext.level1 in (${xsExt.level})
+		</if>
+		<if test="xsOther.toUrged!=null and ''!=xsOther.toUrged">
+			and DATEDIFF(dd,gjjl.nextDate,GETDATE()) = 0
+		</if>
+		<if test="xsSearch.sortName !=null and ''!=xsSearch.sortName">
+			order by ${xsSearch.sortName} ${xsSearch.sortDir},tradeGuid
+		</if>
+		<if test="xsSearch.length!=null and ''!=xsSearch.length">
+			select top ${xsSearch.length} * from #unSignUp where TradeGUID not in (select top ${xsSearch.startIndex} TradeGUID from #unSignUp)
+		</if>
+		<if test="xsSearch.length==null or ''==xsSearch.length">
+			select * from #unSignUp
+		</if>
+		drop table #unSignUp
+ 	</select>
+ 	<!-- 未放款客户查询-->
+ 	<select id="getUnLendingCstListDao" parameterType="com.zs.crm.entity.XsBusinessUrgedInfoVo" resultMap="businessUrgedInfoResult">
+		SELECT
+				* INTO #unLending
+			FROM
+				(
+					SELECT
+						R.RoomInfo,
+						R.BldArea,
+						T.CstAllName AS CstName,
+						cstname1.MobileTel,
+						cstname1.Gender,
+						cstname1.HomeTel,
+						cstname1.OfficeTel,
+						cstname1.Fax,
+						CONVERT (VARCHAR(20), C.QSDate, 23) AS QStime,
+						C.RmbHtTotal,
+						(
+							sf.QKTotal + ISNULL(sf3.QKTotal2, 0) - ISNULL(sf2.ckTotal, 0)
+						) AS QKTotal,
+						'签约' AS saleStatus,
+						vm.UserName AS UserName,
+						C.ProjGUID,
+						C.RoomGUID,
+						C.TradeGUID,
+						C.ContractGUID,
+						opp.UserGUID AS uId,
+						gjjl.createDate,
+						gjjl.nextDate,
+						gjjl.content,
+			
+						CASE WHEN ext.postponeDate IS NOT NULL AND ext.postponeStage='3' THEN ext.postponeDate
+						ELSE NULL
+						END AS postponeDate,
+						CASE
+					WHEN ext.level2 IS NULL
+					OR ext.level2 = 0 THEN
+						'0'
+					ELSE
+						'1'
+					END AS level2,
+					CASE
+				WHEN (
+					sf.QKTotal + ISNULL(sf3.QKTotal2, 0) - ISNULL(sf2.ckTotal, 0)
+				) = '.0000' THEN
+					0
+				WHEN (
+					CASE
+					WHEN ext.postponeDate IS NOT NULL AND ext.postponeStage='3' THEN
+						DATEDIFF(
+							dd,
+							ext.postponeDate,
+							GETDATE()
+						)
+					ELSE
+						DATEDIFF(dd, C.QSDate, GETDATE())
+					END
+				) &lt; 0 THEN
+					0
+				ELSE
+					(
+						CASE
+						WHEN ext.postponeDate IS NOT  NULL AND ext.postponeStage='3' THEN
+							DATEDIFF(
+								dd,
+								ext.postponeDate,
+								GETDATE()
+							)
+						ELSE
+							DATEDIFF(dd, C.QSDate, GETDATE())
+						END
+					)
+				END AS overDays,
+				CASE
+			WHEN C.AjBank IS NULL
+			OR C.AjBank = '' THEN
+				C.GjjBank
+			ELSE
+				C.AjBank
+			END AS bank
+			FROM
+				dbo.s_Trade AS T
+			LEFT OUTER JOIN dbo.s_Trade2Cst AS cst1 ON T.TradeGUID = cst1.TradeGUID
+			AND cst1.CstNum = 1
+			LEFT OUTER JOIN dbo.p_Customer AS cstname1 ON cst1.CstGUID = cstname1.CstGUID
+			LEFT OUTER JOIN dbo.s_Contract AS C ON C.TradeGUID = T.TradeGUID
+			LEFT OUTER JOIN dbo.p_Room AS R ON C.RoomGUID = R.RoomGUID
+			LEFT OUTER JOIN dbo.p_Building AS B ON B.BldGUID = R.BldGUID
+			LEFT OUTER JOIN dbo.s_Opportunity AS opp ON opp.CstGUID = cstname1.CstGUID
+			AND NOT EXISTS (
+				SELECT
+					1
+				FROM
+					s_Opportunity
+				WHERE
+					CstGUID = opp.CstGUID
+				AND scrm_timestamp_data > opp.scrm_timestamp_data
+			)
+			INNER JOIN dbo.vs_user_ntm vm ON vm.
+			VALUE
+				= CAST (opp.UserGUID AS VARCHAR(50))
+			AND (
+				vm.groupName LIKE '%销售%'
+				OR vm.groupName = '离职组'
+				OR vm.userName = '其他'
+			)
+			LEFT JOIN (
+				SELECT
+					*
+				FROM
+					zs_trade_gjjl a
+				WHERE
+					NOT EXISTS (
+						SELECT
+							*
+						FROM
+							zs_trade_gjjl
+						WHERE
+							a.TradeGUID = TradeGUID
+						AND createDate > a.createDate
+						AND urgedStage='3'
+					)AND a.urgedStage='3'
+			)
+		 as gjjl ON gjjl.tradeGUID=convert(VARCHAR(50),T.TradeGUID)
+		LEFT JOIN zs_trade_ext ext on ext.tradeGUID = T.TradeGUID
+		INNER JOIN (SELECT     SUM(RmbYe) AS QKTotal, TradeGUID, MIN(lastDate) AS YQdate 
+		                           FROM          dbo.s_Fee 
+		                           WHERE      
+		                           <if test="xsFee.rmbYe == 1">
+		                           (RmbYe > 0)
+		                           </if>
+		                           <if test="xsFee.rmbYe == 2">
+		                           (RmbYe = 0)	
+		                           </if>
+		                           <if test="xsFee.rmbYe == 3">
+		                           (RmbYe >= 0)
+		                           </if>
+		                           AND (lastDate IS NOT NULL) <!-- AND (DATEDIFF(dd, lastDate, GETDATE()) > 0) --> AND (ItemType = '贷款类房款') AND (ItemName = '银行按揭' OR 
+		                                                  ItemName = '公积金') 
+		                           GROUP BY TradeGUID 
+		                           HAVING      
+		                           <if test="xsFee.rmbYe == 1">
+		                           (SUM(RmbYe) > 0)
+		                           </if>
+		                           <if test="xsFee.rmbYe == 2">
+		                           (SUM(RmbYe) = 0)	
+		                           </if>
+		                           <if test="xsFee.rmbYe == 3">
+		                           (SUM(RmbYe) >= 0)
+		                           </if>
+		                           ) AS sf ON sf.TradeGUID = C.TradeGUID
+		LEFT JOIN (SELECT     SUM(DsAmount) AS ckTotal, TradeGUID 
+                                FROM          dbo.s_Fee 
+                                
+                                GROUP BY TradeGUID 
+                                HAVING      (SUM(DsAmount) > 0) 
+                                )AS sf2 ON sf2.TradeGUID=c.TradeGUID 
+        LEFT JOIN (SELECT     SUM(RmbYe) AS QKTotal2, TradeGUID 
+                                FROM          dbo.s_Fee 
+                                WHERE      
+                                <if test="xsFee.rmbYe == 1">
+		                           (RmbYe > 0)
+		                        </if>
+		                        <if test="xsFee.rmbYe == 2">
+		                           (RmbYe = 0)	
+		                        </if>
+		                        <if test="xsFee.rmbYe == 3">
+		                           (RmbYe >= 0)
+		                        </if> 
+		                        AND (lastDate IS NOT NULL) <!-- AND (DATEDIFF(dd, lastDate, GETDATE()) > 0) --> AND (ItemType = '非贷款类房款') AND (ItemName ='首期') 
+                                                        
+                                GROUP BY TradeGUID 
+                                HAVING      
+                                 <if test="xsFee.rmbYe == 1">
+		                           (SUM(RmbYe) > 0)
+		                           </if>
+		                           <if test="xsFee.rmbYe == 2">
+		                           (SUM(RmbYe) = 0)	
+		                           </if>
+		                           <if test="xsFee.rmbYe == 3">
+		                           (SUM(RmbYe) >= 0)
+		                           </if>
+                                ) AS sf3 ON sf3.TradeGUID=c.TradeGUID 
+		WHERE     (C.Status = '激活') 
+		AND (C.AjTotal > 0) OR(C.Status = '激活') 
+		AND (C.GjjTotal > 0)
+		) x
+		where 1=1
+		<if test="xsOpp.userGuid!=null and ''!=xsOpp.userGuid">
+			and uId = #{xsOpp.userGuid}
+		</if> 
+		<if test="xsOpp.projGuid!=null and ''!=xsOpp.projGuid">
+			and ProjGUID = #{xsOpp.projGuid}
+		</if>
+		<if test="xsCst.cstName!=null and ''!=xsCst.cstName">
+			and CstName = #{xsCst.cstName}
+		</if>
+		<if test="xsCst.mobileTel!=null and ''!=xsCst.mobileTel">
+			and (MobileTel = #{xsCst.mobileTel} or OfficeTel = #{xsCst.mobileTel} or HomeTel = #{xsCst.mobileTel} or Fax = #{xsCst.mobileTel})
+		</if>
+		<if test="xsTrade.tradeGuid!=null and ''!=xsTrade.tradeGuid">
+			and TradeGUID = #{xsTrade.tradeGuid}
+		</if>
+		<if test="xsExt.level!=null and ''!=xsExt.level">
+			and level2 in (${xsExt.level})
+		</if>
+		<if test="xsOther.toUrged!=null and ''!=xsOther.toUrged">
+			and DATEDIFF(dd,nextDate,GETDATE()) = 0
+		</if>
+		<if test="xsOther.bank!=null and ''!=xsOther.bank">
+			and bank = #{xsOther.bank}<!--Add 2016-7-14  -->
+		</if>
+		<if test="xsSearch.sortName !=null and ''!=xsSearch.sortName">
+			order by ${xsSearch.sortName} ${xsSearch.sortDir},tradeGuid
+		</if>
+		<if test="xsSearch.length!=null and ''!=xsSearch.length">
+			select top ${xsSearch.length} * from #unLending where TradeGUID not in (select top ${xsSearch.startIndex} TradeGUID from #unLending)
+		</if>
+		<if test="xsSearch.length==null or ''==xsSearch.length">
+			select * from #unLending
+		</if>
+		drop table #unLending
+ 	</select>
+ 	<!-- 今日待催办客户查询  不用了-->
+ 	<select id="getToUrgedCstListDao" parameterType="com.zs.crm.entity.XsBusinessUrgedInfoVo" resultMap="businessUrgedInfoResult">
+ 	
+ 	</select>
+ 	<!-- 新增催办记录 -->
+ 	<insert id="insertCstUrgedInfoDao" parameterType="com.zs.crm.entity.tableStructure.XsTradeGjjlTableEntity">
+ 		insert into zs_trade_gjjl(tradeGUID,userGUID,createDate,nextDate,content,type,urgedStage) values(#{tradeGuid},#{urgedUserGuid},#{urgedDate},#{nextUrgedDate},#{urgedContent},#{urgedType},#{urgedStage})
+ 	</insert>
+	<resultMap id="UrgedGjjlInfoResult" type="com.zs.crm.entity.XsBusinessUrgedInfoVo">
+		<id property="xsGjjl.id" column="id"/>
+ 		<result property="xsGjjl.urgedDate" column="createDate"/>
+ 		<result property="xsGjjl.nextUrgedDate" column="nextDate"/>
+ 		<result property="xsGjjl.urgedContent" column="content"/>
+ 		<result property="xsUser.username" column="UserName"/>
+ 	</resultMap>
+ 	<!-- 根据tradeGuid查询催办记录 -->       
+ 	<select id="getCstUrgedInfoDao" parameterType="com.zs.crm.entity.XsBusinessUrgedInfoVo" resultMap="UrgedGjjlInfoResult">
+ 		select a.id,a.createDate,a.nextDate,a.content,case when b.UserName is null or b.userName='' then a.userGUID else b.userName end as UserName into #urgedInfo from zs_trade_gjjl a left join zs_rbac_user_ext b on a.userGUID = b.value  where a.tradeGUID = #{xsGjjl.tradeGuid} 
+ 		<if test="xsGjjl.urgedType!=null and ''!=xsGjjl.urgedType">
+ 			and a.type = #{xsGjjl.urgedType}
+ 		</if>
+ 		<if test="xsGjjl.urgedStage!=null and ''!=xsGjjl.urgedStage">
+ 			and a.urgedStage = #{xsGjjl.urgedStage}
+ 		</if>
+ 		<if test="xsSearch.sortName!=null and ''!=xsSearch.sortName">
+ 			order by a.${xsSearch.sortName} ${xsSearch.sortDir},a.id
+ 		</if>
+ 		<if test="xsSearch.length!=null and ''!=xsSearch.length">
+ 			select top ${xsSearch.length} * from #urgedInfo where id not in (select top ${xsSearch.startIndex} id from #urgedInfo)
+ 		</if>
+ 		<if test="xsSearch.length==null or ''==xsSearch.length"> 
+ 			select * from #urgedInfo
+ 		</if> 
+ 	</select>
+ 	<!-- 新增或更新延期信息 -->
+ 	<insert id="insertOrUpdateDelayInfoDao" parameterType="com.zs.crm.entity.tableStructure.XsTradeExtTableEntity">
+ 		IF NOT EXISTS(SELECT 1 FROM zs_trade_ext WHERE tradeGUID=#{tradeGuid} ) 
+			BEGIN 
+	   			insert into zs_trade_ext (tradeGUID,postponeDate,postponeTimes,postponeReason,postponeStage) VALUES (#{tradeGuid},#{postponeDate},1,#{postponeReason},#{postponeStage}); 
+			END
+			ELSE
+			BEGIN
+				update zs_trade_ext set postponeDate = #{postponeDate},postponeTimes = postponeTimes+1,postponeReason = isnull(postponeReason,'')+#{postponeReason}, postponeStage=#{postponeStage} where tradeGUID=#{tradeGuid}
+			END
+ 	</insert>
+ 	<!-- 新增或更新催办状态信息 -->
+ 	<insert id="insertOrUpdateUrgedStatusInfoDao" parameterType="com.zs.crm.entity.tableStructure.XsTradeExtTableEntity">
+ 		IF NOT EXISTS(SELECT 1 FROM zs_trade_ext WHERE tradeGUID=#{tradeGuid} ) 
+			BEGIN 
+	   			insert into zs_trade_ext (tradeGUID,level,level1,level2) VALUES (#{tradeGuid},#{level},#{level1},#{level2}); 
+			END
+			ELSE
+			BEGIN
+				update zs_trade_ext set 
+				<if test="level!=null and ''!=level">
+					level = #{level},
+				</if>
+				<if test="level1!=null and ''!=level1">
+					level1 = #{level1},
+				</if>
+				<if test="level2!=null and ''!=level2">
+					level2 = #{level2},
+				</if>
+				tradeGUID = #{tradeGuid} where tradeGUID=#{tradeGuid}
+			END
+ 	</insert>
+ 	<!-- 根据tradeGuid查询缴费详情 -->
+ 	<select id="getFeeInfoByTradeGuidDao" parameterType="String" resultMap="feeInfoResult">
+ 		select * from s_Fee where TradeGUID = #{tradeGuid}
+ 	</select>
+ </mapper>
