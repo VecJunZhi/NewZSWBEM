@@ -11,7 +11,7 @@
 	
 	<!-- 开启对aspect的支持 -->
 	<aop:aspectj-autoproxy/>
-	<bean id="sysCon" class="com.zs.test.rbac.springAOPdeveloped.AimClass"></bean>
+	<!-- <bean id="sysCon" class="com.zs.test.rbac.springAOPdeveloped.AimClass"></bean> -->
 	<bean id="aspectClass" class="com.zs.test.rbac.springAOPdeveloped.AspectClass"></bean>
 	
 </beans>

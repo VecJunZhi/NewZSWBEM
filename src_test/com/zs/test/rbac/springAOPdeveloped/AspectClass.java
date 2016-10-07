@@ -42,7 +42,7 @@ public class AspectClass {
 	@Around(value = "sendDDMessage()")
 	private void aroundCheckMem(ProceedingJoinPoint point) {
 		// TODO Auto-generated method stub
-		System.out.println("memcTest方法执行之前");
+		System.out.println("memcTest方法执行之前是是是");
 		try {
 			point.proceed();
 		} catch (Throwable e) {
